@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  블록 렌더 컴포넌트. 미리보기(front/post.html)와 향후 프론트 서버 렌더링에서 공용으로 사용한다.
+  블록 형식은 BlockContent.java / block-editor.js 와 동일. html 필드는 서버에서 정화된 인라인 HTML 이므로 th:utext 로 출력한다.
+-->
+<th:block th:fragment="render(blocks)">
+  <div class="f-empty" th:if="${#lists.isEmpty(blocks)}">본문이 없습니다.</div>
+
+  <th:block th:each="b : ${blocks}">
+    <!-- 텍스트 -->
+    <div class="blk blk-paragraph" th:if="${b['type'] == 'paragraph'}">
+      <p th:style="'text-align:' + ${b['align'] ?: 'left'}" th:utext="${b['html']}"></p>
+    </div>
+
+    <!-- 제목 -->
+    <div class="blk blk-heading" th:if="${b['type'] == 'heading'}">
+      <h1 th:if="${b['level'] == 1}" th:utext="${b['html']}"></h1>
+      <h2 th:if="${b['level'] == 2 or b['level'] == null}" th:utext="${b['html']}"></h2>
+      <h3 th:if="${b['level'] == 3}" th:utext="${b['html']}"></h3>
+    </div>
+
+    <!-- 이미지 -->
+    <div class="blk blk-image" th:if="${b['type'] == 'image'}" th:classappend="'w-' + ${b['width'] ?: 'full'}">
+      <figure>
+        <img th:src="${b['url']}" th:alt="${b['alt']}" loading="lazy">
+        <figcaption th:if="${!#strings.isEmpty(b['caption'])}" th:text="${b['caption']}"></figcaption>
+      </figure>
+    </div>
+
+    <!-- 인용 -->
+    <div class="blk blk-quote" th:if="${b['type'] == 'quote'}">
+      <blockquote th:utext="${b['html']}"></blockquote>
+    </div>
+
+    <!-- 목록 -->
+    <div class="blk blk-list" th:if="${b['type'] == 'list'}">
+      <ul th:if="${b['style'] != 'number'}">
+        <li th:each="item : ${b['items']}" th:utext="${item}"></li>
+      </ul>
+      <ol th:if="${b['style'] == 'number'}">
+        <li th:each="item : ${b['items']}" th:utext="${item}"></li>
+      </ol>
+    </div>
+
+    <!-- 구분선 -->
+    <div class="blk blk-divider" th:if="${b['type'] == 'divider'}"><hr></div>
+  </th:block>
+</th:block>
+</body>
+</html>

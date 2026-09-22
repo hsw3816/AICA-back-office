@@ -1,0 +1,70 @@
+spring:
+  application:
+    name: aica-backoffice
+  profiles:
+    default: local
+  thymeleaf:
+    cache: false
+  datasource:
+    # 1차 초안: 설치 없이 실행되는 H2 파일 DB. 운영 DB(PostgreSQL 16 후보) 확정 후 전환.
+    url: jdbc:h2:file:./data/backoffice;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: egovframework.backoffice
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: NULL
+
+server:
+  address: 127.0.0.1
+  port: 8080
+  error:
+    include-message: never
+    include-stacktrace: never
+    whitelabel:
+      enabled: false
+
+backoffice:
+  site-name: AICA 관리자 페이지
+  environment-label: local
+  upload-dir: ./data/uploads
+  front-base-url: http://localhost:3000
+  initial-admin:
+    login-id: admin
+    name: 최초 관리자
+    # 최초 기동 시 한 번만 사용. 환경변수 BACKOFFICE_INITIAL_ADMIN_PASSWORD 로 덮어쓰기 권장.
+    password: ${BACKOFFICE_INITIAL_ADMIN_PASSWORD:admin1234!}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  thymeleaf:
+    cache: true
+  datasource:
+    url: ${BACKOFFICE_DB_URL}
+    username: ${BACKOFFICE_DB_USERNAME}
+    password: ${BACKOFFICE_DB_PASSWORD}
+    driver-class-name: ${BACKOFFICE_DB_DRIVER:org.postgresql.Driver}

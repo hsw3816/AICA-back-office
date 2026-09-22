@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.backoffice.post.PostMapper">
+
+  <sql id="columns">
+    p.id, p.category_id, p.title, p.summary, p.thumbnail_url, p.thumbnail_mode, p.status,
+    p.author_id, p.view_count, p.published_at, p.created_at, p.updated_at, p.deleted_at,
+    c.name AS category_name, c.slug AS category_slug, u.name AS author_name
+  </sql>
+
+  <sql id="joins">
+    FROM posts p
+    LEFT JOIN categories c ON c.id = p.category_id
+    LEFT JOIN admin_users u ON u.id = p.author_id
+  </sql>
+
+  <sql id="searchWhere">
+    WHERE p.deleted_at IS NULL
+    <if test="s.status != null">
+      AND p.status = #{s.status}
+    </if>
+    <if test="s.categoryId != null">
+      AND p.category_id = #{s.categoryId}
+    </if>
+    <if test="s.keyword != null and s.keyword != ''">
+      AND (LOWER(p.title) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(p.summary, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%')))
+    </if>
+  </sql>
+
+  <select id="search" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    <include refid="searchWhere"/>
+    ORDER BY p.id DESC
+    LIMIT #{s.size} OFFSET #{s.offset}
+  </select>
+
+  <select id="countSearch" resultType="long">
+    SELECT COUNT(*)
+    <include refid="joins"/>
+    <include refid="searchWhere"/>
+  </select>
+
+  <select id="findById" resultType="Post">
+    SELECT <include refid="columns"/>, p.blocks_json
+    <include refid="joins"/>
+    WHERE p.id = #{id} AND p.deleted_at IS NULL
+  </select>
+
+  <select id="findPublishedById" resultType="Post">
+    SELECT <include refid="columns"/>, p.blocks_json
+    <include refid="joins"/>
+    WHERE p.id = #{id} AND p.deleted_at IS NULL AND p.status = 'PUBLISHED'
+  </select>
+
+  <select id="findPublished" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    WHERE p.deleted_at IS NULL AND p.status = 'PUBLISHED'
+    <if test="categorySlug != null and categorySlug != ''">
+      AND c.slug = #{categorySlug}
+    </if>
+    ORDER BY p.published_at DESC, p.id DESC
+    LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="countPublished" resultType="long">
+    SELECT COUNT(*)
+    <include refid="joins"/>
+    WHERE p.deleted_at IS NULL AND p.status = 'PUBLISHED'
+    <if test="categorySlug != null and categorySlug != ''">
+      AND c.slug = #{categorySlug}
+    </if>
+  </select>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO posts (category_id, title, summary, thumbnail_url, thumbnail_mode, status, blocks_json,
+                       author_id, published_at)
+    VALUES (#{categoryId}, #{title}, #{summary}, #{thumbnailUrl}, #{thumbnailMode}, #{status}, #{blocksJson},
+            #{authorId}, #{publishedAt})
+  </insert>
+
+  <update id="update">
+    UPDATE posts
+       SET category_id = #{categoryId},
+           title = #{title},
+           summary = #{summary},
+           thumbnail_url = #{thumbnailUrl},
+           thumbnail_mode = #{thumbnailMode},
+           status = #{status},
+           blocks_json = #{blocksJson},
+           published_at = #{publishedAt},
+           updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="softDelete">
+    UPDATE posts SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="updateStatus">
+    UPDATE posts
+       SET status = #{status},
+           published_at = CASE WHEN #{status} = 'PUBLISHED' AND published_at IS NULL THEN CURRENT_TIMESTAMP ELSE published_at END,
+           updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="increaseViewCount">
+    UPDATE posts SET view_count = view_count + 1 WHERE id = #{id}
+  </update>
+
+  <select id="countAll" resultType="long">
+    SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL
+  </select>
+
+  <select id="countByStatus" resultType="long">
+    SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND status = #{status}
+  </select>
+
+  <select id="findTopViewed" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    WHERE p.deleted_at IS NULL
+    ORDER BY p.view_count DESC, p.id DESC
+    LIMIT #{limit}
+  </select>
+
+  <select id="findRecent" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    WHERE p.deleted_at IS NULL
+    ORDER BY p.updated_at DESC, p.id DESC
+    LIMIT #{limit}
+  </select>
+</mapper>

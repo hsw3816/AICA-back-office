@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout('현황 요약', ~{::main}, ~{::scripts})}">
+<body>
+<main>
+  <h2 class="page-title">현황 요약 <span class="sub">최근 7일 기준</span></h2>
+
+  <div class="alert info" th:if="${me != null and me.mustChangePw}">
+    임시 비밀번호를 사용 중입니다. <a th:href="@{/account/password}" style="color:var(--blue);font-weight:600">비밀번호를 변경</a>해 주세요.
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="k">오늘 방문자</div><div class="v" th:text="${#numbers.formatInteger(stats.todayVisitors, 1, 'COMMA')}">0</div><div class="d">고유 방문자 기준</div></div>
+    <div class="kpi"><div class="k">7일 방문자</div><div class="v" th:text="${#numbers.formatInteger(stats.periodVisitors, 1, 'COMMA')}">0</div><div class="d">페이지뷰 <span th:text="${#numbers.formatInteger(stats.periodPageViews, 1, 'COMMA')}">0</span></div></div>
+    <div class="kpi"><div class="k">7일 게시물 조회</div><div class="v" th:text="${#numbers.formatInteger(stats.periodPostViews, 1, 'COMMA')}">0</div><div class="d">게시중인 글 기준</div></div>
+    <div class="kpi"><div class="k">게시물</div><div class="v" th:text="${stats.totalPosts}">0</div><div class="d">게시중 <span th:text="${stats.publishedPosts}">0</span> · 임시저장 <span th:text="${stats.draftPosts}">0</span></div></div>
+  </div>
+
+  <div class="row-2">
+    <div class="card">
+      <div class="card-head">
+        <div class="left"><b>일별 방문자 · 게시물 조회</b></div>
+        <div class="legend"><span><i style="background:var(--green)"></i>방문자</span><span><i style="background:var(--blue)"></i>게시물 조회</span> <a th:href="@{/admin/stats}" style="color:var(--blue);margin-left:10px">자세히</a></div>
+      </div>
+      <div class="card-body">
+        <div class="bars">
+          <div class="col" th:each="d : ${stats.daily}">
+            <div style="display:flex;gap:2px;align-items:flex-end;height:130px;width:100%;justify-content:center">
+              <div class="bar" th:style="'height:' + ${stats.maxVisitors > 0 ? (d.visitors * 100 / stats.maxVisitors) : 0} + '%'" th:title="'방문자 ' + ${d.visitors}"></div>
+              <div class="bar views" th:style="'height:' + ${stats.maxPostViews > 0 ? (d.postViews * 100 / stats.maxPostViews) : 0} + '%'" th:title="'조회 ' + ${d.postViews}"></div>
+            </div>
+            <div class="lbl" th:text="${#temporals.format(d.day, 'M/d')}">9/22</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="left"><b>조회수 상위 게시물</b></div><a th:href="@{/admin/posts}" style="color:var(--blue);font-size:12px">전체 목록</a></div>
+      <table class="list">
+        <thead><tr><th>게시물</th><th style="width:70px" class="right">조회</th></tr></thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(stats.topPosts)}"><td colspan="2" class="muted" style="text-align:center;padding:24px">게시물이 없습니다.</td></tr>
+        <tr th:each="p, it : ${stats.topPosts}" th:if="${it.index < 5}">
+          <td>
+            <a th:href="@{/admin/posts/{id}/edit(id=${p.id})}" th:text="${p.title}" style="font-weight:600">제목</a>
+            <div class="muted" style="font-size:11px"><span th:text="${p.categoryName ?: '미분류'}"></span> · <span class="badge" th:classappend="${p.status.css}" th:text="${p.status.label}"></span></div>
+          </td>
+          <td class="right" th:text="${#numbers.formatInteger(p.viewCount, 1, 'COMMA')}">0</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-head"><div class="left"><b>바로가기</b></div></div>
+    <div class="card-body actions" style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn primary" th:href="@{/admin/posts/new}">게시물 작성</a>
+      <a class="btn ghost" th:href="@{/admin/posts}">게시물 목록</a>
+      <a class="btn ghost" th:href="@{/admin/categories}">카테고리 관리</a>
+      <a class="btn ghost" th:href="@{/admin/faq}">FAQ 관리</a>
+      <a class="btn ghost" th:href="@{/admin/stats}">통계</a>
+      <a class="btn ghost" th:if="${me != null and me.superAdmin}" th:href="@{/admin/users}">관리자 계정</a>
+    </div>
+  </div>
+</main>
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>
