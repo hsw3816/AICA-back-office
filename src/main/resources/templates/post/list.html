@@ -21,7 +21,10 @@
         <a class="btn ghost sm" th:if="${search.filtered}" th:href="@{/admin/posts}">초기화</a>
         <span class="count">(표시 <span th:text="${#lists.size(result.items)}">0</span>건 / 총 <span th:text="${result.total}">0</span> 건)</span>
       </div>
-      <a class="btn primary" th:href="@{/admin/posts/new}">신규 등록</a>
+      <div class="left">
+        <a class="btn danger sm" th:if="${me.role.canManageContent()}" th:href="@{/admin/posts/trash}">휴지통</a>
+        <a class="btn primary" th:href="@{/admin/posts/new}">신규 등록</a>
+      </div>
     </form>
 
     <table class="list">
@@ -76,8 +79,8 @@
               <input type="hidden" name="status" value="HIDDEN">
               <button class="btn ghost xs" type="submit">숨김</button>
             </form>
-            <form th:if="${me.role.canManageContent()}" th:action="@{/admin/posts/{id}/delete(id=${p.id})}" method="post" data-confirm="이 게시물을 삭제할까요? 목록에서 제외되며 프론트에 노출되지 않습니다.">
-              <button class="btn danger xs" type="submit">삭제</button>
+            <form th:if="${me.role.canManageContent()}" th:action="@{/admin/posts/{id}/delete(id=${p.id})}" method="post" data-confirm="이 게시물을 휴지통으로 이동할까요? 목록과 프론트에서 제외되며 휴지통에서 복원할 수 있습니다.">
+              <button class="btn danger xs" type="submit" title="휴지통으로 이동">휴지통</button>
             </form>
           </div>
         </td>

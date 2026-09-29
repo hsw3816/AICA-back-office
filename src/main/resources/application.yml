@@ -39,7 +39,8 @@ backoffice:
   site-name: AICA 관리자 페이지
   environment-label: local
   upload-dir: ./data/uploads
-  front-base-url: http://localhost:3000
+  # 좌측 프로필의 "AICA 홈페이지 이동" 버튼이 여는 주소 (나중에 여기만 바꾸면 됨)
+  front-base-url: https://www.aica-gj.kr/main.php
   initial-admin:
     login-id: admin
     name: 최초 관리자

@@ -49,6 +49,12 @@ a { color: inherit; }
 .blk-quote blockquote { margin: 0; padding: 4px 0 4px 20px; border-left: 4px solid var(--f-accent); color: #374151; font-size: 17px; font-style: italic; }
 .blk-list ul, .blk-list ol { margin: 0; padding-left: 26px; }
 .blk-list li { margin: 4px 0; }
+.blk-table table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.blk-table th, .blk-table td { border: 1px solid var(--f-line); padding: 8px 12px; text-align: left; vertical-align: top; }
+.blk-table th { background: #f9fafb; font-weight: 700; }
+.blk-code { position: relative; }
+.blk-code pre { margin: 0; background: #1f2937; color: #e5e7eb; border-radius: 8px; padding: 16px 18px; overflow: auto; font-size: 13.5px; line-height: 1.6; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.blk-code .lang { position: absolute; right: 12px; top: 8px; font-size: 11px; color: #9ca3af; }
 .blk-divider hr { border: 0; border-top: 1px solid var(--f-line); margin: 36px auto; width: 120px; }
 .blk a { color: #2563eb; text-decoration: underline; }
 

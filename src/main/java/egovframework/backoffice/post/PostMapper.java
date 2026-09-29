@@ -26,6 +26,19 @@ public interface PostMapper {
 
     int softDelete(@Param("id") Long id);
 
+    /** 휴지통(삭제된 글) 목록 */
+    List<Post> findTrash(@Param("s") PostSearch search);
+
+    long countTrash(@Param("s") PostSearch search);
+
+    Post findDeletedById(@Param("id") Long id);
+
+    int restore(@Param("id") Long id);
+
+    int deleteViewLogs(@Param("id") Long id);
+
+    int hardDelete(@Param("id") Long id);
+
     int updateStatus(@Param("id") Long id, @Param("status") PostStatus status);
 
     int increaseViewCount(@Param("id") Long id);

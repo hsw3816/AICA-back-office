@@ -27,6 +27,11 @@ public class GlobalModelAdvice {
         return properties.getEnvironmentLabel();
     }
 
+    @ModelAttribute("frontBaseUrl")
+    public String frontBaseUrl() {
+        return properties.getFrontBaseUrl();
+    }
+
     @ModelAttribute("me")
     public CurrentAdmin me() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

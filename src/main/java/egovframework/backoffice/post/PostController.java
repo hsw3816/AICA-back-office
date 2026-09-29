@@ -48,11 +48,36 @@ public class PostController {
         return "post/list";
     }
 
+    /** 휴지통 — 삭제된 글 목록 */
+    @GetMapping("/trash")
+    public String trash(@ModelAttribute("search") PostSearch search, Model model) {
+        if (search.getSize() < 1 || search.getSize() > 100) {
+            search.setSize(20);
+        }
+        model.addAttribute("menu", "trash");
+        model.addAttribute("result", postService.searchTrash(search));
+        return "post/trash";
+    }
+
+    @PostMapping("/{id}/restore")
+    public String restore(@PathVariable Long id, RedirectAttributes redirect) {
+        postService.restore(id);
+        redirect.addFlashAttribute("toast", "게시물을 복원했습니다. 글 관리에서 확인할 수 있습니다.");
+        return "redirect:/admin/posts";
+    }
+
+    @PostMapping("/{id}/purge")
+    public String purge(@PathVariable Long id, RedirectAttributes redirect) {
+        postService.purge(id);
+        redirect.addFlashAttribute("toast", "게시물을 완전히 삭제했습니다.");
+        return "redirect:/admin/posts/trash";
+    }
+
     @GetMapping("/new")
     public String createForm(Model model) {
         model.addAttribute("form", new PostForm());
         addFormOptions(model);
-        return "post/form";
+        return "post/editor";
     }
 
     @PostMapping
@@ -60,7 +85,7 @@ public class PostController {
                          @AuthenticationPrincipal CurrentAdmin me, Model model, RedirectAttributes redirect) {
         if (binding.hasErrors()) {
             addFormOptions(model);
-            return "post/form";
+            return "post/editor";
         }
         try {
             Post saved = postService.create(form, me.getId());
@@ -69,7 +94,7 @@ public class PostController {
         } catch (IllegalArgumentException e) {
             binding.reject("blocks", e.getMessage());
             addFormOptions(model);
-            return "post/form";
+            return "post/editor";
         }
     }
 
@@ -79,7 +104,7 @@ public class PostController {
         model.addAttribute("post", post);
         model.addAttribute("form", PostForm.from(post));
         addFormOptions(model);
-        return "post/form";
+        return "post/editor";
     }
 
     @PostMapping("/{id}")
@@ -89,7 +114,7 @@ public class PostController {
         if (binding.hasErrors()) {
             model.addAttribute("post", postService.get(id));
             addFormOptions(model);
-            return "post/form";
+            return "post/editor";
         }
         try {
             postService.update(id, form);
@@ -99,7 +124,7 @@ public class PostController {
             binding.reject("blocks", e.getMessage());
             model.addAttribute("post", postService.get(id));
             addFormOptions(model);
-            return "post/form";
+            return "post/editor";
         }
     }
 
@@ -111,10 +136,11 @@ public class PostController {
         return "redirect:" + (back != null && back.startsWith("/admin/") ? back : "/admin/posts");
     }
 
+    /** 휴지통으로 이동 (soft delete) */
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirect) {
         postService.delete(id);
-        redirect.addFlashAttribute("toast", "게시물을 삭제했습니다.");
+        redirect.addFlashAttribute("toast", "게시물을 휴지통으로 이동했습니다.");
         return "redirect:/admin/posts";
     }
 

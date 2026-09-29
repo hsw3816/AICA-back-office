@@ -70,9 +70,39 @@ public class PostService {
         mapper.updateStatus(id, status);
     }
 
+    /** 휴지통으로 이동(soft delete). 목록·프론트에서 제외되며 휴지통에서 복원할 수 있다. */
     public void delete(Long id) {
         get(id);
         mapper.softDelete(id);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResult<Post> searchTrash(PostSearch search) {
+        List<Post> items = mapper.findTrash(search);
+        long total = mapper.countTrash(search);
+        return new PageResult<>(items, search.getPage(), search.getSize(), total);
+    }
+
+    @Transactional(readOnly = true)
+    public Post getDeleted(Long id) {
+        Post post = mapper.findDeletedById(id);
+        if (post == null) {
+            throw new NotFoundException("휴지통에서 게시물을 찾을 수 없습니다.");
+        }
+        return post;
+    }
+
+    /** 휴지통에서 복원 → 글 관리 목록으로 돌아간다(상태는 삭제 전 그대로). */
+    public void restore(Long id) {
+        getDeleted(id);
+        mapper.restore(id);
+    }
+
+    /** 완전 삭제 — 휴지통에 있는 글만 가능하며 되돌릴 수 없다. */
+    public void purge(Long id) {
+        getDeleted(id);
+        mapper.deleteViewLogs(id);
+        mapper.hardDelete(id);
     }
 
     /** 폼 입력을 정화해 게시물에 반영한다. 저장 전에 미리보기에서도 같은 규칙을 사용한다. */

@@ -1,70 +1,110 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/admin :: layout('현황 요약', ~{::main}, ~{::scripts})}">
+      th:replace="~{layout/admin :: layout('관리자 홈', ~{::main}, ~{::scripts})}">
 <body>
 <main>
-  <h2 class="page-title">현황 요약 <span class="sub">최근 7일 기준</span></h2>
+  <div class="stamp" th:text="${#temporals.format(stats.generatedAt, 'yyyy-MM-dd HH:mm')} + ' 기준'">2026-09-23 02:07 기준</div>
 
-  <div class="alert info" th:if="${me != null and me.mustChangePw}">
-    임시 비밀번호를 사용 중입니다. <a th:href="@{/account/password}" style="color:var(--blue);font-weight:600">비밀번호를 변경</a>해 주세요.
-  </div>
-
-  <div class="kpis">
-    <div class="kpi"><div class="k">오늘 방문자</div><div class="v" th:text="${#numbers.formatInteger(stats.todayVisitors, 1, 'COMMA')}">0</div><div class="d">고유 방문자 기준</div></div>
-    <div class="kpi"><div class="k">7일 방문자</div><div class="v" th:text="${#numbers.formatInteger(stats.periodVisitors, 1, 'COMMA')}">0</div><div class="d">페이지뷰 <span th:text="${#numbers.formatInteger(stats.periodPageViews, 1, 'COMMA')}">0</span></div></div>
-    <div class="kpi"><div class="k">7일 게시물 조회</div><div class="v" th:text="${#numbers.formatInteger(stats.periodPostViews, 1, 'COMMA')}">0</div><div class="d">게시중인 글 기준</div></div>
-    <div class="kpi"><div class="k">게시물</div><div class="v" th:text="${stats.totalPosts}">0</div><div class="d">게시중 <span th:text="${stats.publishedPosts}">0</span> · 임시저장 <span th:text="${stats.draftPosts}">0</span></div></div>
-  </div>
-
-  <div class="row-2">
-    <div class="card">
-      <div class="card-head">
-        <div class="left"><b>일별 방문자 · 게시물 조회</b></div>
-        <div class="legend"><span><i style="background:var(--green)"></i>방문자</span><span><i style="background:var(--blue)"></i>게시물 조회</span> <a th:href="@{/admin/stats}" style="color:var(--blue);margin-left:10px">자세히</a></div>
+  <!-- 방문수 요약 -->
+  <div class="card">
+    <div class="visit-row">
+      <div class="nums">
+        <div class="n"><div class="k">오늘 방문수</div><div class="v" th:text="${#numbers.formatInteger(stats.todayVisitors, 1, 'COMMA')}">7</div></div>
+        <div class="n"><div class="k">어제 방문수</div><div class="v" th:text="${#numbers.formatInteger(stats.yesterdayVisitors, 1, 'COMMA')}">17</div></div>
+        <div class="n"><div class="k">누적 방문수</div><div class="v" th:text="${#numbers.formatInteger(stats.totalVisitors, 1, 'COMMA')}">488</div></div>
       </div>
-      <div class="card-body">
-        <div class="bars">
-          <div class="col" th:each="d : ${stats.daily}">
-            <div style="display:flex;gap:2px;align-items:flex-end;height:130px;width:100%;justify-content:center">
-              <div class="bar" th:style="'height:' + ${stats.maxVisitors > 0 ? (d.visitors * 100 / stats.maxVisitors) : 0} + '%'" th:title="'방문자 ' + ${d.visitors}"></div>
-              <div class="bar views" th:style="'height:' + ${stats.maxPostViews > 0 ? (d.postViews * 100 / stats.maxPostViews) : 0} + '%'" th:title="'조회 ' + ${d.postViews}"></div>
-            </div>
-            <div class="lbl" th:text="${#temporals.format(d.day, 'M/d')}">9/22</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><div class="left"><b>조회수 상위 게시물</b></div><a th:href="@{/admin/posts}" style="color:var(--blue);font-size:12px">전체 목록</a></div>
-      <table class="list">
-        <thead><tr><th>게시물</th><th style="width:70px" class="right">조회</th></tr></thead>
-        <tbody>
-        <tr th:if="${#lists.isEmpty(stats.topPosts)}"><td colspan="2" class="muted" style="text-align:center;padding:24px">게시물이 없습니다.</td></tr>
-        <tr th:each="p, it : ${stats.topPosts}" th:if="${it.index < 5}">
-          <td>
-            <a th:href="@{/admin/posts/{id}/edit(id=${p.id})}" th:text="${p.title}" style="font-weight:600">제목</a>
-            <div class="muted" style="font-size:11px"><span th:text="${p.categoryName ?: '미분류'}"></span> · <span class="badge" th:classappend="${p.status.css}" th:text="${p.status.label}"></span></div>
-          </td>
-          <td class="right" th:text="${#numbers.formatInteger(p.viewCount, 1, 'COMMA')}">0</td>
-        </tr>
-        </tbody>
-      </table>
+      <a class="btn-line" th:href="@{/admin/stats(days=30)}">방문 통계
+        <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8"/></svg>
+      </a>
     </div>
   </div>
 
-  <div class="card" style="margin-top:16px">
-    <div class="card-head"><div class="left"><b>바로가기</b></div></div>
-    <div class="card-body actions" style="display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn primary" th:href="@{/admin/posts/new}">게시물 작성</a>
-      <a class="btn ghost" th:href="@{/admin/posts}">게시물 목록</a>
-      <a class="btn ghost" th:href="@{/admin/categories}">카테고리 관리</a>
-      <a class="btn ghost" th:href="@{/admin/faq}">FAQ 관리</a>
-      <a class="btn ghost" th:href="@{/admin/stats}">통계</a>
-      <a class="btn ghost" th:if="${me != null and me.superAdmin}" th:href="@{/admin/users}">관리자 계정</a>
+  <!-- 최근 30일 방문 추이 (붉은 선 그래프) -->
+  <div class="card chart-card">
+    <span class="chart-title">일별 방문수 · 최근 30일</span>
+    <svg class="chart" id="visitChart" aria-label="일별 방문수 그래프"></svg>
+  </div>
+
+  <!-- 최근 7일 통계 -->
+  <h3 class="section-title">최근 7일 통계</h3>
+  <div class="two-col">
+    <div class="mini-card">
+      <h4>인기글</h4>
+      <div class="muted" th:if="${#lists.isEmpty(weekly.topPosts)}" style="font-size:12px;padding:8px 0">게시물이 없습니다.</div>
+      <ol class="rank" th:unless="${#lists.isEmpty(weekly.topPosts)}">
+        <li th:each="p, it : ${weekly.topPosts}" th:if="${it.index < 5}">
+          <b th:text="${it.count}">1</b>
+          <a th:href="@{/admin/posts/{id}/preview(id=${p.id})}" target="_blank" th:text="${p.title}">제목</a>
+          <span class="c" th:text="${#numbers.formatInteger(p.viewCount, 1, 'COMMA')}">0</span>
+        </li>
+      </ol>
+    </div>
+    <div class="mini-card">
+      <h4>게시물 현황</h4>
+      <ul class="ratio" th:with="total=${stats.totalPosts > 0 ? stats.totalPosts : 1}">
+        <li><span>게시중</span><span class="bar"><i th:style="'width:' + ${stats.publishedPosts * 100 / total} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(stats.publishedPosts * 100.0 / total, 1, 1)} + '%'">0%</span></li>
+        <li><span>임시저장</span><span class="bar"><i class="c2" th:style="'width:' + ${stats.draftPosts * 100 / total} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(stats.draftPosts * 100.0 / total, 1, 1)} + '%'">0%</span></li>
+        <li><span>답변대기</span><span class="bar"><i class="c4" th:style="'width:' + ${stats.pendingPosts * 100 / total} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(stats.pendingPosts * 100.0 / total, 1, 1)} + '%'">0%</span></li>
+        <li><span>숨김</span><span class="bar"><i class="c3" th:style="'width:' + ${stats.hiddenPosts * 100 / total} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(stats.hiddenPosts * 100.0 / total, 1, 1)} + '%'">0%</span></li>
+      </ul>
+      <div class="muted" style="font-size:11px;margin-top:10px">
+        전체 <b th:text="${stats.totalPosts}">0</b>건 · 7일 게시물 조회 <b th:text="${#numbers.formatInteger(weekly.periodPostViews, 1, 'COMMA')}">0</b>회
+      </div>
     </div>
   </div>
 </main>
-<th:block th:fragment="scripts"></th:block>
+
+<th:block th:fragment="scripts">
+  <script th:inline="javascript">
+    (function () {
+      // 서버 집계 데이터 → SVG 선 그래프
+      var data = /*[[${chart}]]*/ [];
+      var svg = document.getElementById('visitChart');
+      if (!svg || !data.length) return;
+      var W = Math.max(480, svg.clientWidth || 700), H = 240, padL = 20, padR = 24, padT = 44, padB = 46;
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      var n = data.length, max = 0;
+      data.forEach(function (d) { if (d.v > max) max = d.v; });
+      if (max === 0) max = 1;
+      var x = function (i) { return padL + (W - padL - padR) * (n === 1 ? 0.5 : i / (n - 1)); };
+      var y = function (v) { return padT + (H - padT - padB) * (1 - v / max); };
+      var NS = 'http://www.w3.org/2000/svg';
+      function el(t, a) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); return e; }
+      // 가로 보조선
+      [0, .5, 1].forEach(function (r) {
+        var yy = padT + (H - padT - padB) * r;
+        svg.appendChild(el('line', { 'class': 'grid', x1: padL, x2: W - padR, y1: yy, y2: yy }));
+      });
+      // 선
+      var pts = data.map(function (d, i) { return x(i) + ',' + y(d.v); }).join(' ');
+      svg.appendChild(el('polyline', { 'class': 'line', points: pts }));
+      // 점 · 라벨
+      data.forEach(function (d, i) {
+        var cx = x(i), cy = y(d.v), last = i === n - 1;
+        svg.appendChild(el('circle', { 'class': 'dot' + (last ? ' today' : ''), cx: cx, cy: cy, r: 3 }));
+        if (true) {
+          if (last) svg.appendChild(el('rect', { 'class': 'today-bg', x: cx - 14, y: H - padB + 11, width: 28, height: 18, rx: 9 }));
+          var t = el('text', { 'class': 'lbl' + (last ? ' today' : ''), x: cx, y: H - padB + 24 });
+          t.textContent = last ? '오늘' : d.d;
+          svg.appendChild(t);
+          // 월이 바뀌는 첫 날 표시
+          if (i === 0 || data[i - 1].m !== d.m) {
+            var mt = el('text', { 'class': 'lbl', x: cx, y: H - padB + 40 }); mt.textContent = d.m; svg.appendChild(mt);
+          }
+        }
+      });
+      // 오늘 값 툴팁
+      var li = n - 1, tx = x(li), ty = y(data[li].v);
+      var boxX = Math.min(tx - 40, W - padR - 92), boxY = Math.max(6, ty - 60);
+      svg.appendChild(el('rect', { 'class': 'tip-box', x: boxX, y: boxY, width: 92, height: 42, rx: 3 }));
+      var k = el('text', { 'class': 'tip-k', x: boxX + 8, y: boxY + 14 }); k.textContent = '일간 방문수'; svg.appendChild(k);
+      var v = el('text', { 'class': 'tip-v', x: boxX + 8, y: boxY + 31 }); v.textContent = data[li].v; svg.appendChild(v);
+      var diff = n > 1 ? data[li].v - data[li - 1].v : 0;
+      var dt = el('text', { 'class': 'tip-d', x: boxX + 10 + String(data[li].v).length * 9 + 6, y: boxY + 31 });
+      dt.textContent = (diff >= 0 ? '▲ ' : '▼ ') + Math.abs(diff); svg.appendChild(dt);
+      svg.appendChild(el('line', { 'class': 'grid', x1: tx, x2: tx, y1: boxY + 42, y2: ty - 4, style: 'stroke:#ddd' }));
+    })();
+  </script>
+</th:block>
 </body>
 </html>

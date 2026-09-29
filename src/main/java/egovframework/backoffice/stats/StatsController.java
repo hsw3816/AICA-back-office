@@ -23,7 +23,21 @@ public class StatsController {
             return "redirect:/admin/posts";
         }
         model.addAttribute("menu", "dashboard");
-        model.addAttribute("stats", statsService.summary(7));
+        StatsService.Summary monthly = statsService.summary(30);
+        model.addAttribute("stats", monthly);
+        model.addAttribute("weekly", statsService.summary(7));
+        // 그래프용 단순 데이터 (템플릿에서 JSON 으로 인라인)
+        java.time.format.DateTimeFormatter dayFmt = java.time.format.DateTimeFormatter.ofPattern("d");
+        java.time.format.DateTimeFormatter monFmt = java.time.format.DateTimeFormatter.ofPattern("M월");
+        java.util.List<java.util.Map<String, Object>> chart = new java.util.ArrayList<>();
+        for (DailyStat d : monthly.getDaily()) {
+            java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("d", d.getDay().format(dayFmt));
+            m.put("m", d.getDay().format(monFmt));
+            m.put("v", d.getVisitors());
+            chart.add(m);
+        }
+        model.addAttribute("chart", chart);
         return "dashboard/index";
     }
 

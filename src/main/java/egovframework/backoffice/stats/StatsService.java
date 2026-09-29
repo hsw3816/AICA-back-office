@@ -49,6 +49,11 @@ public class StatsService {
         s.from = from;
         s.to = today;
         s.todayVisitors = statsMapper.countVisitors(today, today);
+        s.yesterdayVisitors = statsMapper.countVisitors(today.minusDays(1), today.minusDays(1));
+        s.totalVisitors = statsMapper.countPageViews(LocalDate.of(2000, 1, 1), today);
+        s.pendingPosts = postMapper.countByStatus(PostStatus.PENDING);
+        s.hiddenPosts = postMapper.countByStatus(PostStatus.HIDDEN);
+        s.generatedAt = java.time.LocalDateTime.now();
         s.periodVisitors = statsMapper.countVisitors(from, today);
         s.periodPageViews = statsMapper.countPageViews(from, today);
         s.periodPostViews = statsMapper.countPostViews(from, today);
@@ -99,6 +104,12 @@ public class StatsService {
         private LocalDate from;
         private LocalDate to;
         private long todayVisitors;
+        private long yesterdayVisitors;
+        /** 누적 방문수(전체 기간 페이지뷰) */
+        private long totalVisitors;
+        private long pendingPosts;
+        private long hiddenPosts;
+        private java.time.LocalDateTime generatedAt;
         private long periodVisitors;
         private long periodPageViews;
         private long periodPostViews;

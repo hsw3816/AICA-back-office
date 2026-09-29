@@ -64,7 +64,7 @@ class BackofficeWebTest {
     void initialSuperAdminCanLoginAndSeeDashboard() throws Exception {
         MockHttpSession session = login();
         mvc.perform(get("/admin").session(session)).andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("현황 요약")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("누적 방문수")));
         mvc.perform(get("/admin/users").session(session)).andExpect(status().isOk());
     }
 
@@ -143,9 +143,27 @@ class BackofficeWebTest {
         assertThat(mvc.perform(get("/api/public/categories")).andReturn().getResponse().getContentAsString())
                 .contains("notice");
 
-        // 삭제(soft) → 목록·공개 API 에서 제외
+        // 휴지통으로 이동(soft) → 목록·공개 API 에서 제외, 휴지통에는 표시
         mvc.perform(post("/admin/posts/" + postId + "/delete").session(session).with(csrf()))
                 .andExpect(status().is3xxRedirection());
+        mvc.perform(get("/api/public/posts")).andExpect(jsonPath("$.total").value(0));
+        mvc.perform(get("/admin/posts/trash").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("복원")));
+
+        // 복원 → 글 관리로 돌아오고 공개 API 에 다시 노출
+        mvc.perform(post("/admin/posts/" + postId + "/restore").session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", "/admin/posts"));
+        mvc.perform(get("/api/public/posts")).andExpect(jsonPath("$.total").value(1));
+
+        // 다시 휴지통 → 완전 삭제 → 어디에서도 조회 불가
+        mvc.perform(post("/admin/posts/" + postId + "/delete").session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        mvc.perform(post("/admin/posts/" + postId + "/purge").session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", "/admin/posts/trash"));
+        mvc.perform(get("/admin/posts/" + postId + "/edit").session(session)).andExpect(status().isNotFound());
         mvc.perform(get("/api/public/posts")).andExpect(jsonPath("$.total").value(0));
     }
 

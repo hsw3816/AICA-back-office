@@ -29,8 +29,9 @@ public class SecurityConfig {
                 .requestMatchers("/uploads/**", "/api/public/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/admin/users/**").hasRole(AdminRole.SUPER_ADMIN.name())
-                // SUPPORT 는 게시물 등록·수정만: 삭제·상태 변경·카테고리 변경·통계는 관리자 이상
-                .requestMatchers("/admin/posts/*/delete", "/admin/posts/*/status", "/admin/stats/**").hasAnyRole(
+                // SUPPORT 는 게시물 등록·수정만: 삭제·휴지통·상태 변경·카테고리 변경·통계는 관리자 이상
+                .requestMatchers("/admin/posts/trash", "/admin/posts/*/delete", "/admin/posts/*/restore",
+                        "/admin/posts/*/purge", "/admin/posts/*/status", "/admin/stats/**").hasAnyRole(
                         AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
                 .requestMatchers(HttpMethod.POST, "/admin/categories/**").hasAnyRole(
                         AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())

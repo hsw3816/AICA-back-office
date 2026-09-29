@@ -16,7 +16,7 @@ public class BackofficeProperties {
     /** 업로드 이미지 저장 디렉터리 */
     private String uploadDir = "./data/uploads";
     /** 프론트 오피스 주소 (미리보기 화면에서 "실제 화면 열기" 링크에 사용) */
-    private String frontBaseUrl = "http://localhost:3000";
+    private String frontBaseUrl = "https://www.aica-gj.kr/main.php";
     private InitialAdmin initialAdmin = new InitialAdmin();
 
     @Getter

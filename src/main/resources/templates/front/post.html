@@ -16,8 +16,7 @@
     프론트 게시물 화면과 같은 구성으로 표시합니다. 상태:
     <b th:text="${post.status != null} ? ${post.status.label} : '-'">임시저장</b>
     <a th:if="${post.id != null}" th:href="@{/admin/posts/{id}/edit(id=${post.id})}">편집으로 돌아가기</a>
-    <a th:if="${post.id != null and post.status != null and post.status.name() == 'PUBLISHED'}"
-       th:href="${frontBaseUrl} + '/posts/' + ${post.id}" target="_blank">프론트 실제 화면 열기</a>
+    <a th:href="${frontBaseUrl}" target="_blank" rel="noopener">AICA 홈페이지 열기</a>
   </div>
   <button type="button" onclick="window.close()">닫기</button>
 </div>

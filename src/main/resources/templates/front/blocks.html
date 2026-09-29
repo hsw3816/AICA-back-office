@@ -44,6 +44,22 @@
       </ol>
     </div>
 
+    <!-- 표 (첫 행 머리글) -->
+    <div class="blk blk-table" th:if="${b['type'] == 'table'}">
+      <table>
+        <tr th:each="row, rs : ${b['rows']}">
+          <th th:if="${rs.first}" th:each="cell : ${row}" th:utext="${cell}"></th>
+          <td th:unless="${rs.first}" th:each="cell : ${row}" th:utext="${cell}"></td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 코드 -->
+    <div class="blk blk-code" th:if="${b['type'] == 'code'}">
+      <pre><code th:text="${b['code']}"></code></pre>
+      <span class="lang" th:if="${!#strings.isEmpty(b['lang'])}" th:text="${b['lang']}"></span>
+    </div>
+
     <!-- 구분선 -->
     <div class="blk blk-divider" th:if="${b['type'] == 'divider'}"><hr></div>
   </th:block>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="(${form.id == null} ? '글쓰기' : '글 수정') + ' | ' + ${siteName}">글쓰기</title>
+  <meta name="_csrf" th:content="${_csrf != null} ? ${_csrf.token} : ''">
+  <meta name="_csrf_header" th:content="${_csrf != null} ? ${_csrf.headerName} : 'X-CSRF-TOKEN'">
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <link rel="stylesheet" th:href="@{/css/editor.css}">
+</head>
+<body class="ed-body">
+
+<form id="postForm" th:object="${form}" method="post"
+      th:action="${form.id == null} ? @{/admin/posts} : @{/admin/posts/{id}(id=${form.id})}">
+  <input type="hidden" th:field="*{id}">
+  <input type="hidden" th:field="*{blocksJson}" id="blocksJson">
+  <input type="hidden" th:field="*{status}" id="statusField">
+  <input type="hidden" th:field="*{thumbnailUrl}" id="thumbnailUrl">
+
+  <!-- ===== 상단: 로고 · 도구 모음 · 사용자 ===== -->
+  <header class="ed-top">
+    <a class="ed-logo" th:href="@{/admin/posts}" title="글 관리로">
+      <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="12" cy="6" r="2.4"/><circle cx="6" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="18" cy="12" r="2.4"/><circle cx="12" cy="18" r="2.4"/></svg>
+      <span th:text="${siteName}">관리자</span>
+    </a>
+    <div id="toolbar" class="ed-toolbar"></div>
+    <div class="ed-user" th:if="${me != null}">
+      <span class="ed-user-name" th:text="${me.name}">홍길동</span>
+      <span class="avatar" th:text="${#strings.substring(me.name, 0, 1)}">홍</span>
+    </div>
+  </header>
+
+  <!-- ===== 본문 작성 영역 ===== -->
+  <main class="ed-main">
+    <div class="ed-paper">
+      <div class="alert error" th:if="${#fields.hasGlobalErrors()}">
+        <div th:each="e : ${#fields.globalErrors()}" th:text="${e}"></div>
+      </div>
+      <div class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+      <div class="field-error" th:if="${#fields.hasErrors('blocksJson')}" th:errors="*{blocksJson}"></div>
+
+      <select class="ed-category" th:field="*{categoryId}" id="categoryId">
+        <option value="">카테고리</option>
+        <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+      </select>
+
+      <input class="ed-title" th:field="*{title}" placeholder="제목을 입력하세요" maxlength="200" autocomplete="off">
+
+      <div id="editor"></div>
+
+      <div class="ed-tags">
+        <input class="ed-summary" th:field="*{summary}" id="summary" maxlength="500" placeholder="#요약 · 비우면 본문 앞부분으로 자동 생성됩니다">
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== 하단 작업 바 ===== -->
+  <footer class="ed-bottom">
+    <div class="left">
+      <button class="ed-link" type="submit" th:formaction="@{/admin/posts/preview}" formtarget="_blank" formnovalidate>
+        <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기
+      </button>
+      <a class="ed-link" th:href="@{/admin/posts}">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> 글 관리
+      </a>
+      <button class="ed-link danger" type="submit" form="deleteForm" th:if="${form.id != null and me.role.canManageContent()}">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg> 삭제
+      </button>
+    </div>
+    <div class="right">
+      <span class="ed-autosave" id="autosaveMsg"></span>
+      <button class="ed-btn ghost" type="button" id="btnDraft">임시저장
+        <span class="cnt" id="draftCount" th:if="${post != null and post.status.name() == 'DRAFT'}">1</span>
+      </button>
+      <button class="ed-btn dark" type="button" id="btnPublish">완료</button>
+    </div>
+  </footer>
+
+  <!-- ===== 발행 설정 패널 (완료 클릭 시) ===== -->
+  <div class="ed-publish" id="publishPanel" hidden>
+    <div class="ed-publish-box">
+      <div class="ed-publish-head">
+        <b>발행 설정</b>
+        <button type="button" class="ed-x" id="publishClose" title="닫기">✕</button>
+      </div>
+      <div class="ed-publish-body">
+        <label class="ed-lbl">공개 설정</label>
+        <div class="ed-radios">
+          <label><input type="radio" name="pubStatus" value="PUBLISHED"> <b>공개</b><span>프론트에 바로 게시됩니다</span></label>
+          <label><input type="radio" name="pubStatus" value="HIDDEN"> <b>비공개</b><span>저장하지만 프론트에는 보이지 않습니다</span></label>
+          <label><input type="radio" name="pubStatus" value="PENDING"> <b>답변대기</b><span>FAQ 질문 등 답변 전 상태</span></label>
+        </div>
+
+        <label class="ed-lbl">대표 이미지</label>
+        <div class="ed-radios">
+          <label><input type="radio" th:field="*{thumbnailMode}" value="AUTO"> <b>본문 첫 이미지 자동</b></label>
+          <label><input type="radio" th:field="*{thumbnailMode}" value="MANUAL"> <b>직접 지정</b></label>
+        </div>
+        <div id="thumbManual" class="ed-thumb">
+          <div id="thumbPreview">
+            <img th:if="${form.thumbnailUrl != null and form.thumbnailUrl != ''}" th:src="${form.thumbnailUrl}" alt="">
+          </div>
+          <div class="row">
+            <label class="ed-btn ghost sm" style="cursor:pointer">이미지 업로드 <input type="file" id="thumbFile" accept="image/*" hidden></label>
+            <button class="ed-btn ghost sm" type="button" id="thumbClear">지우기</button>
+            <span class="ed-help">권장 1200×630</span>
+          </div>
+        </div>
+
+        <label class="ed-lbl">요약</label>
+        <textarea class="ed-ta" id="summaryMirror" rows="3" maxlength="500" placeholder="비우면 본문 앞부분에서 자동 생성"></textarea>
+      </div>
+      <div class="ed-publish-foot">
+        <button type="button" class="ed-btn ghost" id="publishCancel">취소</button>
+        <button type="button" class="ed-btn dark" id="publishConfirm">발행</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<form id="deleteForm" th:if="${form.id != null}" th:action="@{/admin/posts/{id}/delete(id=${form.id})}" method="post"
+      data-confirm="이 게시물을 삭제할까요? 목록에서 제외되며 프론트에 노출되지 않습니다."></form>
+
+<script th:src="@{/js/admin.js}"></script>
+<script th:src="@{/js/block-editor.js}"></script>
+<script th:inline="javascript">
+  (function () {
+    var uploadUrl = /*[[@{/admin/images}]]*/ '/admin/images';
+    var recentUrl = /*[[@{/admin/images/recent}]]*/ '/admin/images/recent';
+    var postId = /*[[${form.id}]]*/ null;
+    var draftKey = 'aica-draft-' + (postId || 'new');
+    var form = document.getElementById('postForm');
+    var titleEl = form.querySelector('[name="title"]');
+    var summaryEl = form.querySelector('[name="summary"]');
+    var statusEl = form.querySelector('[name="status"]');
+    var msg = document.getElementById('autosaveMsg');
+    var dirty = false, timer = null;
+
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function now() { var d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
+
+    // ---- 자동 저장(브라우저 로컬) ----
+    function autosave() {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({
+          at: Date.now(), title: titleEl.value, summary: summaryEl.value,
+          categoryId: form.querySelector('[name="categoryId"]').value, blocks: editor.getBlocks()
+        }));
+        msg.textContent = '자동 저장 완료 ' + now();
+      } catch (e) { /* 저장 공간 부족 등은 무시 */ }
+      dirty = false;
+    }
+    function markDirty() {
+      dirty = true;
+      msg.textContent = '작성 중…';
+      clearTimeout(timer);
+      timer = setTimeout(autosave, 3000);
+    }
+
+    var editor = BlockEditor.mount(document.getElementById('editor'), {
+      input: form.querySelector('[name="blocksJson"]'),
+      toolbar: document.getElementById('toolbar'),
+      uploadUrl: uploadUrl, recentUrl: recentUrl,
+      onChange: markDirty
+    });
+    titleEl.addEventListener('input', markDirty);
+    summaryEl.addEventListener('input', markDirty);
+    form.querySelector('[name="categoryId"]').addEventListener('change', markDirty);
+
+    // 복구 안내: 서버 내용보다 나중에 저장된 로컬 초안이 있을 때
+    try {
+      var saved = JSON.parse(localStorage.getItem(draftKey) || 'null');
+      var serverEmpty = !titleEl.value && editor.isEmpty();
+      if (saved && saved.blocks && (serverEmpty || postId) && (saved.title || saved.blocks.length)) {
+        var when = new Date(saved.at);
+        var bar = document.createElement('div');
+        bar.className = 'ed-restore';
+        bar.innerHTML = '저장하지 않은 초안이 있습니다 (' + pad(when.getMonth() + 1) + '/' + pad(when.getDate()) + ' ' + pad(when.getHours()) + ':' + pad(when.getMinutes()) + '). ' +
+          '<button type="button" class="ed-btn ghost sm" id="restoreYes">불러오기</button> <button type="button" class="ed-btn ghost sm" id="restoreNo">삭제</button>';
+        document.querySelector('.ed-paper').prepend(bar);
+        document.getElementById('restoreYes').addEventListener('click', function () {
+          titleEl.value = saved.title || ''; summaryEl.value = saved.summary || '';
+          if (saved.categoryId) form.querySelector('[name="categoryId"]').value = saved.categoryId;
+          editor.setBlocks(saved.blocks); bar.remove(); markDirty();
+        });
+        document.getElementById('restoreNo').addEventListener('click', function () { localStorage.removeItem(draftKey); bar.remove(); });
+      }
+    } catch (e) { /* ignore */ }
+
+    // ---- 제출 공통 ----
+    form.addEventListener('submit', function (e) {
+      editor.sync(true);
+      var isPreview = e.submitter && e.submitter.hasAttribute('formtarget');
+      if (!isPreview) {
+        if (!titleEl.value.trim()) { e.preventDefault(); titleEl.focus(); notify('제목을 입력하세요.', true); return; }
+        try { localStorage.removeItem(draftKey); } catch (err) { /* ignore */ }
+      }
+    });
+
+    // 임시저장
+    document.getElementById('btnDraft').addEventListener('click', function () {
+      statusEl.value = 'DRAFT';
+      form.requestSubmit();
+    });
+
+    // 완료 → 발행 패널
+    var panel = document.getElementById('publishPanel');
+    var mirror = document.getElementById('summaryMirror');
+    function openPanel() {
+      if (!titleEl.value.trim()) { titleEl.focus(); notify('제목을 입력하세요.', true); return; }
+      var cur = statusEl.value;
+      var pick = (cur === 'HIDDEN' || cur === 'PENDING') ? cur : 'PUBLISHED';
+      document.querySelector('input[name="pubStatus"][value="' + pick + '"]').checked = true;
+      mirror.value = summaryEl.value;
+      panel.hidden = false;
+      toggleThumb();
+    }
+    function closePanel() { panel.hidden = true; }
+    document.getElementById('btnPublish').addEventListener('click', openPanel);
+    document.getElementById('publishClose').addEventListener('click', closePanel);
+    document.getElementById('publishCancel').addEventListener('click', closePanel);
+    panel.addEventListener('click', function (e) { if (e.target === panel) closePanel(); });
+    document.getElementById('publishConfirm').addEventListener('click', function () {
+      statusEl.value = document.querySelector('input[name="pubStatus"]:checked').value;
+      summaryEl.value = mirror.value;
+      form.requestSubmit();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !panel.hidden) closePanel();
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); document.getElementById('btnDraft').click(); }
+    });
+
+    // 대표 이미지
+    function toggleThumb() {
+      var m = document.querySelector('input[name="thumbnailMode"]:checked');
+      document.getElementById('thumbManual').style.display = (m && m.value === 'MANUAL') ? '' : 'none';
+    }
+    document.querySelectorAll('input[name="thumbnailMode"]').forEach(function (r) { r.addEventListener('change', toggleThumb); });
+    document.getElementById('thumbFile').addEventListener('change', function () {
+      var file = this.files[0]; if (!file) return;
+      BlockEditor.upload(file, uploadUrl).then(function (res) {
+        form.querySelector('[name="thumbnailUrl"]').value = res.url;
+        document.getElementById('thumbPreview').innerHTML = '<img src="' + res.url + '" alt="">';
+      }).catch(function (e) { notify(e.message || '업로드에 실패했습니다.', true); });
+      this.value = '';
+    });
+    document.getElementById('thumbClear').addEventListener('click', function () {
+      form.querySelector('[name="thumbnailUrl"]').value = '';
+      document.getElementById('thumbPreview').innerHTML = '';
+    });
+
+    // 나가기 경고
+    window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+    form.addEventListener('submit', function () { dirty = false; });
+  })();
+</script>
+</body>
+</html>

@@ -25,13 +25,15 @@ import org.springframework.stereotype.Component;
  *  { "type": "quote",     "html": "..." }
  *  { "type": "list",      "style": "bullet|number", "items": ["html", ...] }
  *  { "type": "divider" }
+ *  { "type": "table",     "rows": [["html", ...], ...] }           (첫 행은 머리글)
+ *  { "type": "code",      "lang": "java", "code": "text" }
  * </pre>
  * 인라인 HTML 은 굵기·기울임·밑줄·취소선·색상·글자 크기·링크만 허용한다(글꼴은 프론트에서 고정).
  */
 @Component
 public class BlockContent {
 
-    public static final Set<String> TYPES = Set.of("heading", "paragraph", "image", "quote", "list", "divider");
+    public static final Set<String> TYPES = Set.of("heading", "paragraph", "image", "quote", "list", "divider", "table", "code");
     private static final Set<String> ALIGNS = Set.of("left", "center", "right");
     private static final Set<String> WIDTHS = Set.of("full", "medium", "small");
     private static final Set<String> LIST_STYLES = Set.of("bullet", "number");
@@ -113,6 +115,38 @@ public class BlockContent {
                         }
                     }
                     b.put("items", items);
+                }
+                case "table" -> {
+                    List<List<String>> rows = new ArrayList<>();
+                    if (raw.get("rows") instanceof List<?> rawRows) {
+                        int cols = 0;
+                        for (Object r : rawRows) {
+                            if (r instanceof List<?> cells && rows.size() < 50) {
+                                List<String> row = new ArrayList<>();
+                                for (Object c : cells) {
+                                    if (row.size() < 12) {
+                                        row.add(cleanInline(str(c)));
+                                    }
+                                }
+                                cols = Math.max(cols, row.size());
+                                rows.add(row);
+                            }
+                        }
+                        for (List<String> row : rows) {
+                            while (row.size() < cols) {
+                                row.add("");
+                            }
+                        }
+                    }
+                    if (rows.isEmpty()) {
+                        continue;
+                    }
+                    b.put("rows", rows);
+                }
+                case "code" -> {
+                    String code = str(raw.get("code"));
+                    b.put("lang", str(raw.get("lang")).replaceAll("[^a-zA-Z0-9+#.-]", "").toLowerCase());
+                    b.put("code", code.length() > 20000 ? code.substring(0, 20000) : code);
                 }
                 default -> { /* divider: 추가 속성 없음 */ }
             }

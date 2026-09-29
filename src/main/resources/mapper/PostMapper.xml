@@ -100,6 +100,47 @@
      WHERE id = #{id} AND deleted_at IS NULL
   </update>
 
+  <sql id="trashWhere">
+    WHERE p.deleted_at IS NOT NULL
+    <if test="s.keyword != null and s.keyword != ''">
+      AND (LOWER(p.title) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(p.summary, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%')))
+    </if>
+  </sql>
+
+  <select id="findTrash" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    <include refid="trashWhere"/>
+    ORDER BY p.deleted_at DESC, p.id DESC
+    LIMIT #{s.size} OFFSET #{s.offset}
+  </select>
+
+  <select id="countTrash" resultType="long">
+    SELECT COUNT(*)
+    <include refid="joins"/>
+    <include refid="trashWhere"/>
+  </select>
+
+  <select id="findDeletedById" resultType="Post">
+    SELECT <include refid="columns"/>
+    <include refid="joins"/>
+    WHERE p.id = #{id} AND p.deleted_at IS NOT NULL
+  </select>
+
+  <update id="restore">
+    UPDATE posts SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP
+     WHERE id = #{id} AND deleted_at IS NOT NULL
+  </update>
+
+  <delete id="deleteViewLogs">
+    DELETE FROM post_view_logs WHERE post_id = #{id}
+  </delete>
+
+  <delete id="hardDelete">
+    DELETE FROM posts WHERE id = #{id} AND deleted_at IS NOT NULL
+  </delete>
+
   <update id="updateStatus">
     UPDATE posts
        SET status = #{status},
