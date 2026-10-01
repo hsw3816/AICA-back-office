@@ -1,6 +1,6 @@
 package egovframework.backoffice.common;
 
-import egovframework.backoffice.auth.CurrentAdmin;
+import egovframework.backoffice.account.CurrentAdmin;
 import egovframework.backoffice.config.BackofficeProperties;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

@@ -1,6 +1,6 @@
 package egovframework.backoffice.config;
 
-import egovframework.backoffice.adminuser.AdminRole;
+import egovframework.backoffice.account.AdminRole;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

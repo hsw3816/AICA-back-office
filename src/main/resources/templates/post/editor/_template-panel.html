@@ -1,0 +1,21 @@
+<!-- 글쓰기 화면 — 우측 템플릿 패널 (post/editor.html 에서 th:replace 로 포함, static/js/post/templates.js 가 제어) -->
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+  <aside class="ed-side" id="templatePanel" th:fragment="panel" hidden>
+    <div class="ed-side-head">
+      <b>템플릿</b>
+      <button type="button" class="ed-x" id="templateClose" title="닫기">✕</button>
+    </div>
+    <div class="ed-side-tabs">
+      <span class="on">내 템플릿</span>
+      <span class="ed-side-count" id="templateCount"></span>
+    </div>
+    <div class="ed-side-body" id="templateList"><div class="ed-side-empty">불러오는 중…</div></div>
+    <div class="ed-side-foot">
+      <button type="button" class="ed-btn primary" id="templateSave" style="width:100%">＋ 현재 글을 템플릿으로 저장</button>
+      <div class="ed-help" style="margin-top:8px">본문 구성(블록)과 제목·카테고리를 저장합니다. 불러올 때 현재 내용을 교체하거나 뒤에 이어 붙일 수 있습니다.</div>
+    </div>
+  </aside>
+</body>
+</html>

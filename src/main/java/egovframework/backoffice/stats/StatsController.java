@@ -1,6 +1,6 @@
 package egovframework.backoffice.stats;
 
-import egovframework.backoffice.auth.CurrentAdmin;
+import egovframework.backoffice.account.CurrentAdmin;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

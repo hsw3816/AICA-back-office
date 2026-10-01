@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.backoffice.media.ImageMapper">
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO images (stored_name, original_name, content_type, size_bytes, url, uploaded_by)
+    VALUES (#{storedName}, #{originalName}, #{contentType}, #{sizeBytes}, #{url}, #{uploadedBy})
+  </insert>
+
+  <select id="findById" resultType="ImageFile">
+    SELECT id, stored_name, original_name, content_type, size_bytes, url, uploaded_by, created_at
+      FROM images WHERE id = #{id}
+  </select>
+
+  <select id="findRecent" resultType="ImageFile">
+    SELECT id, stored_name, original_name, content_type, size_bytes, url, uploaded_by, created_at
+      FROM images
+     ORDER BY id DESC
+     LIMIT #{limit}
+  </select>
+
+  <delete id="delete">
+    DELETE FROM images WHERE id = #{id}
+  </delete>
+</mapper>
