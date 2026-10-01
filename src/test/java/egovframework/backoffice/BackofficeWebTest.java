@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -41,6 +42,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 class BackofficeWebTest {
 
     @Autowired MockMvc mvc;
+    @Autowired com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     private MockHttpSession login() throws Exception {
         MvcResult result = mvc.perform(formLogin("/login").user("loginId", "admin").password("password", "test-pass-1234"))
@@ -143,6 +145,34 @@ class BackofficeWebTest {
         assertThat(mvc.perform(get("/api/public/categories")).andReturn().getResponse().getContentAsString())
                 .contains("notice");
 
+        // 버전 이력: 등록(저장) 1건 → 수정 후 2건, 첫 버전으로 복원하면 백업+복원 이력이 추가되고 제목이 되돌아간다
+        String v1 = mvc.perform(get("/admin/posts/" + postId + "/versions").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].reason").value("MANUAL_DRAFT"))
+                .andExpect(jsonPath("$[0].title").value("테스트 게시물"))
+                .andReturn().getResponse().getContentAsString().replaceAll(".*?\"id\":(\\d+).*", "$1");
+        mvc.perform(post("/admin/posts/" + postId).session(session).with(csrf())
+                        .param("title", "수정된 제목").param("categoryId", categoryId).param("status", "PUBLISHED")
+                        .param("thumbnailMode", "AUTO").param("blocksJson", blocks))
+                .andExpect(status().is3xxRedirection());
+        mvc.perform(get("/admin/posts/" + postId + "/versions").session(session))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].reason").value("PUBLISH"));
+        mvc.perform(get("/admin/posts/" + postId + "/versions/" + v1).session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("테스트 게시물"))
+                .andExpect(jsonPath("$.blocks[0].type").value("heading"));
+        mvc.perform(post("/admin/posts/" + postId + "/versions/" + v1 + "/restore").session(session).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", "/admin/posts/" + postId + "/edit"));
+        mvc.perform(get("/admin/posts/" + postId + "/versions").session(session))
+                .andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$[0].reason").value("RESTORE"))
+                .andExpect(jsonPath("$[1].reason").value("RESTORE_BACKUP"));
+        assertThat(mvc.perform(get("/admin/posts/" + postId + "/edit").session(session)).andReturn().getResponse().getContentAsString())
+                .contains("테스트 게시물");
+
         // 휴지통으로 이동(soft) → 목록·공개 API 에서 제외, 휴지통에는 표시
         mvc.perform(post("/admin/posts/" + postId + "/delete").session(session).with(csrf()))
                 .andExpect(status().is3xxRedirection());
@@ -169,6 +199,36 @@ class BackofficeWebTest {
 
     @Test
     @Order(4)
+    void templatesCanBeSavedListedLoadedAndDeleted() throws Exception {
+        MockHttpSession session = login();
+        String blocksJson = "[{\"type\":\"heading\",\"level\":2,\"html\":\"<span style=\\\"font-family: 'Nanum Myeongjo'; position: absolute\\\">제목</span>\"},{\"type\":\"divider\"}]";
+        String body = objectMapper.writeValueAsString(java.util.Map.of(
+                "name", "공지 기본형", "titleHint", "[공지] ", "blocksJson", blocksJson));
+        String created = mvc.perform(post("/admin/templates").session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("공지 기본형"))
+                .andReturn().getResponse().getContentAsString();
+        String id = created.replaceAll(".*?\"id\":(\\d+).*", "$1");
+        mvc.perform(get("/admin/templates").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].blockCount").value(2))
+                .andExpect(jsonPath("$[0].preview").value("제목"));
+        // 허용 글꼴은 유지, 위험한 style 은 제거
+        String loaded = mvc.perform(get("/admin/templates/" + id).session(session))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(loaded).contains("Nanum Myeongjo").doesNotContain("position");
+        // 이름 없는 저장은 400
+        mvc.perform(post("/admin/templates").session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\" \",\"blocksJson\":\"[]\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(delete("/admin/templates/" + id).session(session).with(csrf())).andExpect(status().isOk());
+        mvc.perform(get("/admin/templates/" + id).session(session)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Order(5)
     void imageUploadRejectsNonImagesAndAcceptsPng() throws Exception {
         MockHttpSession session = login();
         var fake = new MockMultipartFile("file", "evil.png", "image/png", "not an image".getBytes());
@@ -184,7 +244,7 @@ class BackofficeWebTest {
     }
 
     @Test
-    @Order(5)
+    @Order(6)
     void superAdminManagesAccountsAndLastSuperAdminIsProtected() throws Exception {
         MockHttpSession session = login();
         mvc.perform(post("/admin/users").session(session).with(csrf())

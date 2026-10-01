@@ -22,9 +22,10 @@
     </div>
 
     <!-- 이미지 -->
-    <div class="blk blk-image" th:if="${b['type'] == 'image'}" th:classappend="'w-' + ${b['width'] ?: 'full'}">
+    <div class="blk blk-image" th:if="${b['type'] == 'image'}" th:classappend="'w-' + ${b['width'] ?: 'full'} + ' a-' + ${b['align'] ?: 'center'}">
       <figure>
-        <img th:src="${b['url']}" th:alt="${b['alt']}" loading="lazy">
+        <a th:if="${!#strings.isEmpty(b['link'])}" th:href="${b['link']}" target="_blank" rel="noopener noreferrer"><img th:src="${b['url']}" th:alt="${b['alt']}" loading="lazy"></a>
+        <img th:unless="${!#strings.isEmpty(b['link'])}" th:src="${b['url']}" th:alt="${b['alt']}" loading="lazy">
         <figcaption th:if="${!#strings.isEmpty(b['caption'])}" th:text="${b['caption']}"></figcaption>
       </figure>
     </div>

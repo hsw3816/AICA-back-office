@@ -12,11 +12,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class PostService {
 
+    /** 게시물당 보관하는 저장 이력 수(발행 이력은 별도로 모두 보관) */
+    public static final int VERSION_KEEP = 20;
+
     private final PostMapper mapper;
+    private final PostVersionMapper versions;
     private final BlockContent blocks;
 
-    public PostService(PostMapper mapper, BlockContent blocks) {
+    public PostService(PostMapper mapper, PostVersionMapper versions, BlockContent blocks) {
         this.mapper = mapper;
+        this.versions = versions;
         this.blocks = blocks;
     }
 
@@ -53,16 +58,63 @@ public class PostService {
             post.setPublishedAt(LocalDateTime.now());
         }
         mapper.insert(post);
+        recordVersion(post, post.getStatus() == PostStatus.PUBLISHED ? PostVersion.PUBLISH : PostVersion.MANUAL_DRAFT, authorId);
         return post;
     }
 
-    public void update(Long id, PostForm form) {
+    public void update(Long id, PostForm form, Long adminId) {
         Post post = get(id);
         apply(post, form);
         if (post.getStatus() == PostStatus.PUBLISHED && post.getPublishedAt() == null) {
             post.setPublishedAt(LocalDateTime.now());
         }
         mapper.update(post);
+        recordVersion(post, post.getStatus() == PostStatus.PUBLISHED ? PostVersion.PUBLISH : PostVersion.MANUAL_DRAFT, adminId);
+    }
+
+    /* ---------- 버전 이력 ---------- */
+
+    private void recordVersion(Post post, String reason, Long adminId) {
+        versions.insert(PostVersion.of(post, reason, adminId));
+        versions.prune(post.getId(), VERSION_KEEP);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostVersion> versionsOf(Long postId) {
+        get(postId);
+        return versions.findByPost(postId, 100);
+    }
+
+    @Transactional(readOnly = true)
+    public PostVersion version(Long postId, Long versionId) {
+        get(postId);
+        PostVersion v = versions.findById(postId, versionId);
+        if (v == null) {
+            throw new NotFoundException("버전을 찾을 수 없습니다.");
+        }
+        return v;
+    }
+
+    /**
+     * 선택한 버전으로 되돌린다. 현재 내용을 먼저 '복원 전 백업'으로 남기고,
+     * 제목·요약·카테고리·본문·대표이미지를 스냅샷 값으로 교체한다. 공개 상태(status)는 바꾸지 않는다.
+     */
+    public void restoreVersion(Long postId, Long versionId, Long adminId) {
+        Post post = get(postId);
+        PostVersion v = version(postId, versionId);
+        recordVersion(post, PostVersion.RESTORE_BACKUP, adminId);
+
+        PostForm form = new PostForm();
+        form.setTitle(v.getTitle());
+        form.setSummary(v.getSummary());
+        form.setCategoryId(v.getCategoryId());
+        form.setThumbnailMode(v.getThumbnailMode());
+        form.setThumbnailUrl(v.getThumbnailUrl());
+        form.setStatus(post.getStatus());
+        form.setBlocksJson(v.getBlocksJson());
+        apply(post, form);
+        mapper.update(post);
+        recordVersion(post, PostVersion.RESTORE, adminId);
     }
 
     public void changeStatus(Long id, PostStatus status) {
@@ -101,6 +153,7 @@ public class PostService {
     /** 완전 삭제 — 휴지통에 있는 글만 가능하며 되돌릴 수 없다. */
     public void purge(Long id) {
         getDeleted(id);
+        versions.deleteByPost(id);
         mapper.deleteViewLogs(id);
         mapper.hardDelete(id);
     }
@@ -121,6 +174,11 @@ public class PostService {
         post.setThumbnailMode(manual ? "MANUAL" : "AUTO");
         post.setThumbnailUrl(manual ? form.getThumbnailUrl().trim() : blocks.firstImageUrl(parsed));
         return post;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> blocksOfJson(String json) {
+        return blocks.parse(json);
     }
 
     /** 미리보기 렌더용: 저장된 JSON 을 블록 목록으로 */

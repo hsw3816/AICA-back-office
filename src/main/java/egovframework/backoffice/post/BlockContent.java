@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
  * <pre>
  *  { "type": "heading",   "level": 2, "html": "..." }
  *  { "type": "paragraph", "align": "left|center|right", "html": "..." }
- *  { "type": "image",     "url": "/uploads/..", "alt": "", "caption": "", "width": "full|medium|small" }
+ *  { "type": "image",     "url": "/uploads/..", "alt": "", "caption": "", "width": "full|medium|small", "align": "left|center|right", "link": "https://.." }
  *  { "type": "quote",     "html": "..." }
  *  { "type": "list",      "style": "bullet|number", "items": ["html", ...] }
  *  { "type": "divider" }
@@ -39,6 +39,9 @@ public class BlockContent {
     private static final Set<String> LIST_STYLES = Set.of("bullet", "number");
     private static final Pattern COLOR = Pattern.compile("^(#[0-9a-fA-F]{3,8}|rgb\\(\\s*\\d{1,3}\\s*,\\s*\\d{1,3}\\s*,\\s*\\d{1,3}\\s*\\)|[a-zA-Z]{3,20})$");
     private static final Pattern FONT_SIZE = Pattern.compile("^(\\d{1,2}(\\.\\d)?)(px|rem|em)$");
+    /** 편집기에서 고를 수 있는 글꼴(Google Fonts). 프론트도 같은 목록을 로드한다. */
+    public static final Set<String> FONT_FAMILIES = Set.of(
+            "Nanum Gothic", "Nanum Myeongjo", "Gowun Dodum", "Gowun Batang", "Nanum Pen Script", "Do Hyeon");
     private static final Pattern SAFE_URL = Pattern.compile("^(/uploads/[\\w\\-./]+|https?://[^\\s\"'<>]+)$");
 
     private final ObjectMapper objectMapper;
@@ -103,6 +106,10 @@ public class BlockContent {
                     b.put("alt", plain(str(raw.get("alt")), 200));
                     b.put("caption", plain(str(raw.get("caption")), 300));
                     b.put("width", WIDTHS.contains(width) ? width : "full");
+                    String align = str(raw.get("align"));
+                    b.put("align", ALIGNS.contains(align) ? align : "center");
+                    String link = str(raw.get("link")).trim();
+                    b.put("link", SAFE_URL.matcher(link).matches() ? link : "");
                 }
                 case "quote" -> b.put("html", cleanInline(str(raw.get("html"))));
                 case "list" -> {
@@ -227,16 +234,26 @@ public class BlockContent {
             boolean ok = switch (prop) {
                 case "color", "background-color" -> COLOR.matcher(value).matches();
                 case "font-size" -> FONT_SIZE.matcher(value).matches();
+                case "font-family" -> FONT_FAMILIES.contains(fontName(value));
                 case "font-weight" -> value.matches("^(bold|normal|[1-9]00)$");
                 case "font-style" -> value.matches("^(italic|normal)$");
                 case "text-decoration", "text-decoration-line" -> value.matches("^(underline|line-through|none)( (underline|line-through))?$");
                 default -> false;
             };
             if (ok) {
+                if (prop.equals("font-family")) {
+                    value = "'" + fontName(value) + "'";
+                }
                 kept.append(prop).append(": ").append(value).append("; ");
             }
         }
         return kept.toString().trim();
+    }
+
+    /** "'Nanum Gothic', sans-serif" 같은 값에서 첫 글꼴 이름만 (따옴표 제거) */
+    private static String fontName(String value) {
+        String first = value.split(",")[0].trim();
+        return first.replaceAll("^[\"']|[\"']$", "").trim();
     }
 
     private static String plain(String s, int max) {

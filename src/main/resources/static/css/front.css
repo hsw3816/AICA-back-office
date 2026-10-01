@@ -45,6 +45,9 @@ a { color: inherit; }
 .blk-image img { max-width: 100%; border-radius: 8px; }
 .blk-image.w-medium img { max-width: 70%; }
 .blk-image.w-small img { max-width: 45%; }
+.blk-image.a-left figure { text-align: left; }
+.blk-image.a-right figure { text-align: right; }
+.blk-image figure a { display: inline-block; }
 .blk-image figcaption { color: var(--f-muted); font-size: 13px; margin-top: 8px; }
 .blk-quote blockquote { margin: 0; padding: 4px 0 4px 20px; border-left: 4px solid var(--f-accent); color: #374151; font-size: 17px; font-style: italic; }
 .blk-list ul, .blk-list ol { margin: 0; padding-left: 26px; }

@@ -28,10 +28,16 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String tooLarge(Model model) {
+    public Object tooLarge(jakarta.servlet.http.HttpServletRequest request, Model model) {
+        String message = "업로드 용량 제한(10MB)을 초과했습니다. 이미지를 줄여서 다시 올려 주세요.";
+        // 에디터의 fetch 업로드(/admin/images)에는 JSON 으로 응답
+        if (request.getRequestURI().startsWith("/admin/images")) {
+            return org.springframework.http.ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .body(java.util.Map.of("message", message));
+        }
         model.addAttribute("status", 400);
-        model.addAttribute("message", "업로드 용량 제한(10MB)을 초과했습니다.");
-        return "error";
+        model.addAttribute("message", message);
+        return new org.springframework.web.servlet.ModelAndView("error", model.asMap(), HttpStatus.BAD_REQUEST);
     }
 }

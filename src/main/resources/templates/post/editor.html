@@ -7,6 +7,8 @@
   <meta name="_csrf" th:content="${_csrf != null} ? ${_csrf.token} : ''">
   <meta name="_csrf_header" th:content="${_csrf != null} ? ${_csrf.headerName} : 'X-CSRF-TOKEN'">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&amp;family=Nanum+Myeongjo:wght@400;700&amp;family=Gowun+Dodum&amp;family=Gowun+Batang:wght@400;700&amp;family=Nanum+Pen+Script&amp;family=Do+Hyeon&amp;display=swap">
   <link rel="stylesheet" th:href="@{/css/editor.css}">
 </head>
 <body class="ed-body">
@@ -18,109 +20,132 @@
   <input type="hidden" th:field="*{status}" id="statusField">
   <input type="hidden" th:field="*{thumbnailUrl}" id="thumbnailUrl">
 
-  <!-- ===== 상단: 로고 · 도구 모음 · 사용자 ===== -->
-  <header class="ed-top">
-    <a class="ed-logo" th:href="@{/admin/posts}" title="글 관리로">
-      <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="12" cy="6" r="2.4"/><circle cx="6" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="18" cy="12" r="2.4"/><circle cx="12" cy="18" r="2.4"/></svg>
-      <span th:text="${siteName}">관리자</span>
-    </a>
-    <div id="toolbar" class="ed-toolbar"></div>
-    <div class="ed-user" th:if="${me != null}">
-      <span class="ed-user-name" th:text="${me.name}">홍길동</span>
-      <span class="avatar" th:text="${#strings.substring(me.name, 0, 1)}">홍</span>
+  <!-- ===== 상단 바: 돌아가기 · 도구 · 저장 ===== -->
+  <header class="ed-bar">
+    <div class="ed-bar-left">
+      <a class="ed-back" th:href="@{/admin/posts}" title="글 관리로">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> 글 관리
+      </a>
+      <span class="ed-bar-title" th:text="${form.id == null} ? '새 글 작성' : '글 수정'">새 글 작성</span>
+    </div>
+    <div class="ed-bar-right">
+      <span class="ed-stats" id="edStats" title="공백 포함 글자 수 · 블록 수"></span>
+      <span class="ed-autosave" id="autosaveMsg"></span>
+      <button class="ed-tool" type="button" id="btnTemplate" title="템플릿 불러오기 / 현재 글을 템플릿으로 저장">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/></svg> 템플릿
+      </button>
+      <button class="ed-tool" type="button" id="btnHistory" th:if="${form.id != null}" title="저장·발행할 때마다 남는 이전 버전을 보고 되돌립니다">
+        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg> 버전 이력
+      </button>
+      <button class="ed-tool" type="submit" th:formaction="@{/admin/posts/preview}" formtarget="_blank" formnovalidate title="새 탭에서 프론트 화면으로 미리보기">
+        <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기
+      </button>
+      <span class="ed-bar-sep"></span>
+      <button class="ed-btn" type="button" id="btnDraft" title="임시저장 상태로 서버에 저장 (Ctrl+S)">임시저장</button>
+      <button class="ed-btn primary" type="button" id="btnSave">저장</button>
     </div>
   </header>
 
-  <!-- ===== 본문 작성 영역 ===== -->
-  <main class="ed-main">
-    <div class="ed-paper">
+  <!-- ===== 상태 배너 ===== -->
+  <div class="ed-banner" id="statusBanner" data-status="DRAFT">
+    <b id="bannerLabel">임시저장</b>
+    <span id="bannerText">아직 게시되지 않은 콘텐츠입니다. 저장만으로 공개되지 않습니다.</span>
+  </div>
+
+  <div class="ed-grid">
+    <!-- ===== 본문 ===== -->
+    <main class="ed-col">
       <div class="alert error" th:if="${#fields.hasGlobalErrors()}">
         <div th:each="e : ${#fields.globalErrors()}" th:text="${e}"></div>
       </div>
       <div class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
       <div class="field-error" th:if="${#fields.hasErrors('blocksJson')}" th:errors="*{blocksJson}"></div>
 
-      <select class="ed-category" th:field="*{categoryId}" id="categoryId">
-        <option value="">카테고리</option>
+      <label class="ed-field-label" for="title">제목</label>
+      <input class="ed-title" th:field="*{title}" placeholder="제목을 입력하세요" maxlength="200" autocomplete="off">
+
+      <label class="ed-field-label">본문</label>
+      <div class="ed-box">
+        <div id="toolbar" class="ed-rt"></div>
+        <div id="toolbar2" class="ed-rt ed-rt-more" hidden></div>
+        <div id="tools" class="ed-rt-tools"></div>
+        <div id="editor"></div>
+      </div>
+      <div class="ed-foot">
+        <span>본문은 블록 단위로 저장되며 프론트에서 같은 구성으로 표시됩니다. 사진은 붙여넣기·드래그로도 넣을 수 있습니다.</span>
+        <span class="ed-saved" th:if="${post != null and post.updatedAt != null}" th:text="'마지막 서버 저장 ' + ${#temporals.format(post.updatedAt, 'yyyy-MM-dd HH:mm')}">마지막 서버 저장</span>
+      </div>
+    </main>
+
+    <!-- ===== 콘텐츠 속성 ===== -->
+    <aside class="ed-props">
+      <h3>콘텐츠 속성</h3>
+      <p class="ed-props-desc">공개 상태와 분류, 대표 이미지를 설정합니다.</p>
+
+      <label class="ed-props-label" for="statusSelect">공개 상태</label>
+      <select class="ed-select" id="statusSelect">
+        <option value="DRAFT">임시저장 · 공개되지 않음</option>
+        <option value="PUBLISHED">공개 · 프론트에 게시</option>
+        <option value="HIDDEN">비공개 · 저장만</option>
+        <option value="PENDING">답변대기 · FAQ 질문 등</option>
+      </select>
+
+      <label class="ed-props-label" for="categoryId">카테고리</label>
+      <select class="ed-select" th:field="*{categoryId}" id="categoryId">
+        <option value="">미분류</option>
         <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
       </select>
 
-      <input class="ed-title" th:field="*{title}" placeholder="제목을 입력하세요" maxlength="200" autocomplete="off">
-
-      <div id="editor"></div>
-
-      <div class="ed-tags">
-        <input class="ed-summary" th:field="*{summary}" id="summary" maxlength="500" placeholder="#요약 · 비우면 본문 앞부분으로 자동 생성됩니다">
+      <label class="ed-props-label">대표 이미지</label>
+      <div class="ed-check-row">
+        <label><input type="radio" th:field="*{thumbnailMode}" value="AUTO"> 본문 첫 이미지</label>
+        <label><input type="radio" th:field="*{thumbnailMode}" value="MANUAL"> 직접 지정</label>
       </div>
-    </div>
-  </main>
-
-  <!-- ===== 하단 작업 바 ===== -->
-  <footer class="ed-bottom">
-    <div class="left">
-      <button class="ed-link" type="submit" th:formaction="@{/admin/posts/preview}" formtarget="_blank" formnovalidate>
-        <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg> 미리보기
-      </button>
-      <a class="ed-link" th:href="@{/admin/posts}">
-        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> 글 관리
-      </a>
-      <button class="ed-link danger" type="submit" form="deleteForm" th:if="${form.id != null and me.role.canManageContent()}">
-        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg> 삭제
-      </button>
-    </div>
-    <div class="right">
-      <span class="ed-autosave" id="autosaveMsg"></span>
-      <button class="ed-btn ghost" type="button" id="btnDraft">임시저장
-        <span class="cnt" id="draftCount" th:if="${post != null and post.status.name() == 'DRAFT'}">1</span>
-      </button>
-      <button class="ed-btn dark" type="button" id="btnPublish">완료</button>
-    </div>
-  </footer>
-
-  <!-- ===== 발행 설정 패널 (완료 클릭 시) ===== -->
-  <div class="ed-publish" id="publishPanel" hidden>
-    <div class="ed-publish-box">
-      <div class="ed-publish-head">
-        <b>발행 설정</b>
-        <button type="button" class="ed-x" id="publishClose" title="닫기">✕</button>
-      </div>
-      <div class="ed-publish-body">
-        <label class="ed-lbl">공개 설정</label>
-        <div class="ed-radios">
-          <label><input type="radio" name="pubStatus" value="PUBLISHED"> <b>공개</b><span>프론트에 바로 게시됩니다</span></label>
-          <label><input type="radio" name="pubStatus" value="HIDDEN"> <b>비공개</b><span>저장하지만 프론트에는 보이지 않습니다</span></label>
-          <label><input type="radio" name="pubStatus" value="PENDING"> <b>답변대기</b><span>FAQ 질문 등 답변 전 상태</span></label>
+      <div id="thumbManual" class="ed-thumb">
+        <div id="thumbPreview">
+          <img th:if="${form.thumbnailUrl != null and form.thumbnailUrl != ''}" th:src="${form.thumbnailUrl}" alt="">
         </div>
-
-        <label class="ed-lbl">대표 이미지</label>
-        <div class="ed-radios">
-          <label><input type="radio" th:field="*{thumbnailMode}" value="AUTO"> <b>본문 첫 이미지 자동</b></label>
-          <label><input type="radio" th:field="*{thumbnailMode}" value="MANUAL"> <b>직접 지정</b></label>
+        <div class="row">
+          <label class="ed-btn sm" style="cursor:pointer">이미지 업로드 <input type="file" id="thumbFile" accept="image/*" hidden></label>
+          <button class="ed-btn sm" type="button" id="thumbClear">지우기</button>
+          <span class="ed-help">권장 1200×630</span>
         </div>
-        <div id="thumbManual" class="ed-thumb">
-          <div id="thumbPreview">
-            <img th:if="${form.thumbnailUrl != null and form.thumbnailUrl != ''}" th:src="${form.thumbnailUrl}" alt="">
-          </div>
-          <div class="row">
-            <label class="ed-btn ghost sm" style="cursor:pointer">이미지 업로드 <input type="file" id="thumbFile" accept="image/*" hidden></label>
-            <button class="ed-btn ghost sm" type="button" id="thumbClear">지우기</button>
-            <span class="ed-help">권장 1200×630</span>
-          </div>
-        </div>
+      </div>
 
-        <label class="ed-lbl">요약</label>
-        <textarea class="ed-ta" id="summaryMirror" rows="3" maxlength="500" placeholder="비우면 본문 앞부분에서 자동 생성"></textarea>
+      <label class="ed-props-label" for="summary">요약</label>
+      <textarea class="ed-ta" th:field="*{summary}" id="summary" rows="4" maxlength="500" placeholder="비우면 본문 앞부분으로 자동 생성됩니다"></textarea>
+
+      <hr class="ed-props-hr">
+      <p class="ed-props-note">입력 내용은 브라우저에 자동 백업됩니다. <b>임시저장</b>·<b>저장</b>을 누르면 서버에 저장되고 버전 이력에도 남습니다.</p>
+      <div class="ed-props-actions" th:if="${form.id != null and me.role.canManageContent()}">
+        <button class="ed-tool danger" type="submit" form="deleteForm">
+          <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg> 휴지통으로 이동
+        </button>
       </div>
-      <div class="ed-publish-foot">
-        <button type="button" class="ed-btn ghost" id="publishCancel">취소</button>
-        <button type="button" class="ed-btn dark" id="publishConfirm">발행</button>
-      </div>
-    </div>
+    </aside>
   </div>
+
+  <!-- ===== 템플릿 패널 (우측) ===== -->
+  <aside class="ed-side" id="templatePanel" hidden>
+    <div class="ed-side-head">
+      <b>템플릿</b>
+      <button type="button" class="ed-x" id="templateClose" title="닫기">✕</button>
+    </div>
+    <div class="ed-side-tabs">
+      <span class="on">내 템플릿</span>
+      <span class="ed-side-count" id="templateCount"></span>
+    </div>
+    <div class="ed-side-body" id="templateList"><div class="ed-side-empty">불러오는 중…</div></div>
+    <div class="ed-side-foot">
+      <button type="button" class="ed-btn primary" id="templateSave" style="width:100%">＋ 현재 글을 템플릿으로 저장</button>
+      <div class="ed-help" style="margin-top:8px">본문 구성(블록)과 제목·카테고리를 저장합니다. 불러올 때 현재 내용을 교체하거나 뒤에 이어 붙일 수 있습니다.</div>
+    </div>
+  </aside>
 </form>
 
 <form id="deleteForm" th:if="${form.id != null}" th:action="@{/admin/posts/{id}/delete(id=${form.id})}" method="post"
-      data-confirm="이 게시물을 삭제할까요? 목록에서 제외되며 프론트에 노출되지 않습니다."></form>
+      data-confirm="이 게시물을 휴지통으로 이동할까요? 목록과 프론트에서 제외되며 휴지통에서 복원할 수 있습니다."></form>
+<form id="restoreForm" th:if="${form.id != null}" method="post" hidden></form>
 
 <script th:src="@{/js/admin.js}"></script>
 <script th:src="@{/js/block-editor.js}"></script>
@@ -129,6 +154,7 @@
     var uploadUrl = /*[[@{/admin/images}]]*/ '/admin/images';
     var recentUrl = /*[[@{/admin/images/recent}]]*/ '/admin/images/recent';
     var postId = /*[[${form.id}]]*/ null;
+    var versionsUrl = /*[[${form.id != null} ? @{/admin/posts/{id}/versions(id=${form.id})} : '']]*/ '';
     var draftKey = 'aica-draft-' + (postId || 'new');
     var form = document.getElementById('postForm');
     var titleEl = form.querySelector('[name="title"]');
@@ -147,26 +173,42 @@
           at: Date.now(), title: titleEl.value, summary: summaryEl.value,
           categoryId: form.querySelector('[name="categoryId"]').value, blocks: editor.getBlocks()
         }));
-        msg.textContent = '자동 저장 완료 ' + now();
+        msg.textContent = '브라우저에 백업됨 ' + now() + ' · 서버 저장은 임시저장/완료';
       } catch (e) { /* 저장 공간 부족 등은 무시 */ }
       dirty = false;
     }
+    var statsEl = document.getElementById('edStats');
+    function fingerprint() {
+      return JSON.stringify([titleEl.value, summaryEl.value, form.querySelector('[name="categoryId"]').value, editor.getBlocks()]);
+    }
+    function refreshStats() {
+      if (!statsEl) return;
+      var st = editor.stats();
+      statsEl.textContent = st.chars.toLocaleString() + '자' + (st.images ? ' · 이미지 ' + st.images : '') + ' · 블록 ' + st.blocks;
+    }
+    var savedPrint = null;
     function markDirty() {
       dirty = true;
-      msg.textContent = '작성 중…';
+      msg.textContent = '변경사항 있음 · 잠시 후 브라우저에 백업';
       clearTimeout(timer);
       timer = setTimeout(autosave, 3000);
+      refreshStats();
     }
 
+    var templatesUrl = /*[[@{/admin/templates}]]*/ '/admin/templates';
     var editor = BlockEditor.mount(document.getElementById('editor'), {
       input: form.querySelector('[name="blocksJson"]'),
       toolbar: document.getElementById('toolbar'),
+      toolbar2: document.getElementById('toolbar2'),
+      tools: document.getElementById('tools'),
       uploadUrl: uploadUrl, recentUrl: recentUrl,
       onChange: markDirty
     });
     titleEl.addEventListener('input', markDirty);
     summaryEl.addEventListener('input', markDirty);
     form.querySelector('[name="categoryId"]').addEventListener('change', markDirty);
+    savedPrint = fingerprint();
+    refreshStats();
 
     // 복구 안내: 서버 내용보다 나중에 저장된 로컬 초안이 있을 때
     try {
@@ -178,7 +220,7 @@
         bar.className = 'ed-restore';
         bar.innerHTML = '저장하지 않은 초안이 있습니다 (' + pad(when.getMonth() + 1) + '/' + pad(when.getDate()) + ' ' + pad(when.getHours()) + ':' + pad(when.getMinutes()) + '). ' +
           '<button type="button" class="ed-btn ghost sm" id="restoreYes">불러오기</button> <button type="button" class="ed-btn ghost sm" id="restoreNo">삭제</button>';
-        document.querySelector('.ed-paper').prepend(bar);
+        document.querySelector('.ed-col').prepend(bar);
         document.getElementById('restoreYes').addEventListener('click', function () {
           titleEl.value = saved.title || ''; summaryEl.value = saved.summary || '';
           if (saved.categoryId) form.querySelector('[name="categoryId"]').value = saved.categoryId;
@@ -198,36 +240,39 @@
       }
     });
 
-    // 임시저장
+    // ---- 공개 상태 · 저장 버튼 ----
+    var statusSel = document.getElementById('statusSelect');
+    var banner = document.getElementById('statusBanner');
+    var BANNER = {
+      DRAFT: ['임시저장', '아직 게시되지 않은 콘텐츠입니다. 저장만으로 공개되지 않습니다.'],
+      PUBLISHED: ['공개', '저장하면 프론트에 바로 게시됩니다.'],
+      HIDDEN: ['비공개', '서버에 저장되지만 프론트에는 보이지 않습니다.'],
+      PENDING: ['답변대기', 'FAQ 질문 등 답변 전 상태로 저장됩니다. 프론트에는 보이지 않습니다.']
+    };
+    function syncStatus() {
+      var v = statusSel.value;
+      statusEl.value = v;
+      banner.setAttribute('data-status', v);
+      document.getElementById('bannerLabel').textContent = BANNER[v][0];
+      document.getElementById('bannerText').textContent = BANNER[v][1];
+      document.getElementById('btnSave').textContent = v === 'PUBLISHED' ? '발행' : '저장';
+    }
+    statusSel.value = statusEl.value || 'DRAFT';
+    if (!statusSel.value) statusSel.value = 'DRAFT';
+    syncStatus();
+    statusSel.addEventListener('change', function () { syncStatus(); markDirty(); });
+
     document.getElementById('btnDraft').addEventListener('click', function () {
-      statusEl.value = 'DRAFT';
+      statusSel.value = 'DRAFT'; syncStatus();
       form.requestSubmit();
     });
-
-    // 완료 → 발행 패널
-    var panel = document.getElementById('publishPanel');
-    var mirror = document.getElementById('summaryMirror');
-    function openPanel() {
+    document.getElementById('btnSave').addEventListener('click', function () {
       if (!titleEl.value.trim()) { titleEl.focus(); notify('제목을 입력하세요.', true); return; }
-      var cur = statusEl.value;
-      var pick = (cur === 'HIDDEN' || cur === 'PENDING') ? cur : 'PUBLISHED';
-      document.querySelector('input[name="pubStatus"][value="' + pick + '"]').checked = true;
-      mirror.value = summaryEl.value;
-      panel.hidden = false;
-      toggleThumb();
-    }
-    function closePanel() { panel.hidden = true; }
-    document.getElementById('btnPublish').addEventListener('click', openPanel);
-    document.getElementById('publishClose').addEventListener('click', closePanel);
-    document.getElementById('publishCancel').addEventListener('click', closePanel);
-    panel.addEventListener('click', function (e) { if (e.target === panel) closePanel(); });
-    document.getElementById('publishConfirm').addEventListener('click', function () {
-      statusEl.value = document.querySelector('input[name="pubStatus"]:checked').value;
-      summaryEl.value = mirror.value;
+      if (statusSel.value === 'PUBLISHED' && editor.isEmpty()) { notify('본문이 비어 있어 공개할 수 없습니다.', true); return; }
+      syncStatus();
       form.requestSubmit();
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !panel.hidden) closePanel();
       if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); document.getElementById('btnDraft').click(); }
     });
 
@@ -251,8 +296,199 @@
     });
 
     // 나가기 경고
-    window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
-    form.addEventListener('submit', function () { dirty = false; });
+    var submitting = false;
+    window.addEventListener('beforeunload', function (e) {
+      if (submitting) return;
+      var changed = false;
+      try { changed = fingerprint() !== savedPrint; } catch (err) { changed = dirty; }
+      if (changed) { e.preventDefault(); e.returnValue = ''; }
+    });
+    form.addEventListener('submit', function (e) { if (!(e.submitter && e.submitter.hasAttribute('formtarget'))) submitting = true; });
+
+    // ---- 템플릿 ----
+    var tplPanel = document.getElementById('templatePanel');
+    var tplList = document.getElementById('templateList');
+    var tplCount = document.getElementById('templateCount');
+    function tplHeaders() { var h = csrfHeaders(); h['Content-Type'] = 'application/json'; return h; }
+    function tplFetch(url, opts) {
+      return fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {})).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (body) {
+          if (!r.ok) throw new Error(body.message || ('요청 실패 (' + r.status + ')'));
+          return body;
+        });
+      });
+    }
+    function openTemplates() { tplPanel.hidden = false; document.body.classList.add('ed-side-open'); loadTemplates(); }
+    function closeTemplates() { tplPanel.hidden = true; document.body.classList.remove('ed-side-open'); }
+    document.getElementById('btnTemplate').addEventListener('click', function () { if (tplPanel.hidden) openTemplates(); else closeTemplates(); });
+    document.getElementById('templateClose').addEventListener('click', closeTemplates);
+    function loadTemplates() {
+      tplList.innerHTML = '<div class="ed-side-empty">불러오는 중…</div>';
+      tplFetch(templatesUrl).then(function (list) {
+        tplCount.textContent = '총 ' + list.length + '개';
+        tplList.innerHTML = '';
+        if (!list.length) { tplList.innerHTML = '<div class="ed-side-empty">저장된 템플릿이 없습니다.<br>글을 구성한 뒤 아래 버튼으로 저장해 보세요.</div>'; return; }
+        list.forEach(function (t) {
+          var card = document.createElement('div'); card.className = 'tpl-card';
+          card.innerHTML =
+            (t.thumbnailUrl ? '<img class="tpl-thumb" src="' + esc(t.thumbnailUrl) + '" alt="">' : '<div class="tpl-thumb tpl-thumb-empty">' + esc((t.name || '?').charAt(0)) + '</div>') +
+            '<div class="tpl-body">' +
+            '  <div class="tpl-cat">' + esc(t.categoryName || '템플릿') + '</div>' +
+            '  <div class="tpl-name">' + esc(t.name) + '</div>' +
+            '  <div class="tpl-prev">' + esc(t.preview || (t.titleHint || '')) + '</div>' +
+            '  <div class="tpl-meta">블록 ' + t.blockCount + ' · ' + esc(t.updatedAt || '') + (t.creatorName ? ' · ' + esc(t.creatorName) : '') + '</div>' +
+            '  <div class="tpl-actions">' +
+            '    <button type="button" class="be-btn pri" data-act="use">불러오기</button>' +
+            '    <button type="button" class="be-btn" data-act="append">뒤에 추가</button>' +
+            '    <button type="button" class="be-btn" data-act="rename" title="이름 바꾸기">이름</button>' +
+            '    <button type="button" class="be-btn danger" data-act="del">삭제</button>' +
+            '  </div>' +
+            '</div>';
+          card.addEventListener('click', function (e) {
+            var act = e.target.getAttribute && e.target.getAttribute('data-act'); if (!act) return;
+            if (act === 'use') applyTemplate(t, false);
+            else if (act === 'append') applyTemplate(t, true);
+            else if (act === 'rename') renameTemplate(t);
+            else if (act === 'del') deleteTemplate(t);
+          });
+          tplList.appendChild(card);
+        });
+      }).catch(function (e) { tplList.innerHTML = '<div class="ed-side-empty">' + esc(e.message) + '</div>'; });
+    }
+    function applyTemplate(t, append) {
+      tplFetch(templatesUrl + '/' + t.id).then(function (full) {
+        var hasContent = titleEl.value.trim() || !editor.isEmpty();
+        if (!append && hasContent && !window.confirm('현재 작성 중인 제목·본문을 "' + full.name + '" 템플릿 내용으로 바꿀까요?\n(뒤에 이어 붙이려면 취소 후 "뒤에 추가"를 누르세요)')) return;
+        if (append) {
+          editor.appendBlocks(full.blocks || []);
+        } else {
+          editor.setBlocks(full.blocks || []);
+          if (full.titleHint && !titleEl.value.trim()) titleEl.value = full.titleHint;
+          if (full.categoryId) form.querySelector('[name="categoryId"]').value = full.categoryId;
+        }
+        markDirty();
+        notify('템플릿 "' + full.name + '"' + (append ? '을(를) 뒤에 추가했습니다.' : '을(를) 불러왔습니다.'));
+        closeTemplates();
+      }).catch(function (e) { notify(e.message, true); });
+    }
+    function askName(title, initial, onOk) {
+      var overlay = document.createElement('div'); overlay.className = 'be-picker be-dlg';
+      overlay.innerHTML = '<div class="box"><div class="head"><b>' + esc(title) + '</b><button type="button" class="be-btn" data-x>닫기</button></div>' +
+        '<div class="be-dlg-body"><label class="be-dlg-lbl">템플릿 이름</label><input type="text" class="be-inp" maxlength="100" style="width:100%" placeholder="예: 공지사항 기본형 · 행사 후기 · FAQ 답변">' +
+        '<div class="be-dlg-err"></div></div>' +
+        '<div class="be-dlg-foot"><button type="button" class="be-btn" data-x>취소</button><button type="button" class="be-btn pri" data-ok>저장</button></div></div>';
+      document.body.appendChild(overlay);
+      var inp = overlay.querySelector('input'); inp.value = initial || '';
+      function close() { overlay.remove(); }
+      function ok() { var v = inp.value.trim(); if (!v) { overlay.querySelector('.be-dlg-err').textContent = '이름을 입력하세요.'; inp.focus(); return; } close(); onOk(v); }
+      overlay.querySelectorAll('[data-x]').forEach(function (b) { b.addEventListener('click', close); });
+      overlay.querySelector('[data-ok]').addEventListener('click', ok);
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); ok(); } if (e.key === 'Escape') close(); });
+      overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) close(); });
+      setTimeout(function () { inp.focus(); inp.select(); }, 0);
+    }
+    document.getElementById('templateSave').addEventListener('click', function () {
+      if (editor.isEmpty()) { notify('본문이 비어 있습니다. 블록을 작성한 뒤 저장하세요.', true); return; }
+      askName('현재 글을 템플릿으로 저장', titleEl.value.trim(), function (name) {
+        tplFetch(templatesUrl, { method: 'POST', headers: tplHeaders(), body: JSON.stringify({
+          name: name, titleHint: titleEl.value.trim(), categoryId: form.querySelector('[name="categoryId"]').value || null,
+          blocksJson: JSON.stringify(editor.getBlocks())
+        }) }).then(function () { notify('템플릿 "' + name + '"을(를) 저장했습니다.'); loadTemplates(); })
+          .catch(function (e) { notify(e.message, true); });
+      });
+    });
+    function renameTemplate(t) {
+      tplFetch(templatesUrl + '/' + t.id).then(function (full) {
+        askName('템플릿 이름 바꾸기', full.name, function (name) {
+          tplFetch(templatesUrl + '/' + t.id, { method: 'PUT', headers: tplHeaders(), body: JSON.stringify({
+            name: name, titleHint: full.titleHint, categoryId: full.categoryId, blocksJson: JSON.stringify(full.blocks || [])
+          }) }).then(function () { loadTemplates(); }).catch(function (e) { notify(e.message, true); });
+        });
+      }).catch(function (e) { notify(e.message, true); });
+    }
+    function deleteTemplate(t) {
+      if (!window.confirm('템플릿 "' + t.name + '"을(를) 삭제할까요? 되돌릴 수 없습니다.')) return;
+      tplFetch(templatesUrl + '/' + t.id, { method: 'DELETE', headers: csrfHeaders() })
+        .then(function () { notify('템플릿을 삭제했습니다.'); loadTemplates(); }).catch(function (e) { notify(e.message, true); });
+    }
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !tplPanel.hidden) closeTemplates(); });
+
+    // ---- 버전 이력 ----
+    var histBtn = document.getElementById('btnHistory');
+    if (histBtn) histBtn.addEventListener('click', openHistory);
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function renderBlocks(blocks) {
+      return (blocks || []).map(function (b) {
+        switch (b.type) {
+          case 'heading': return '<h' + (b.level || 2) + '>' + b.html + '</h' + (b.level || 2) + '>';
+          case 'paragraph': return '<p style="text-align:' + esc(b.align || 'left') + '">' + b.html + '</p>';
+          case 'quote': return '<blockquote>' + b.html + '</blockquote>';
+          case 'list': return '<' + (b.style === 'number' ? 'ol' : 'ul') + '>' + (b.items || []).map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</' + (b.style === 'number' ? 'ol' : 'ul') + '>';
+          case 'image': return '<figure style="text-align:' + esc(b.align || 'center') + ';margin:8px 0"><img src="' + esc(b.url) + '" alt="' + esc(b.alt) + '" style="max-width:' + (b.width === 'small' ? '45%' : b.width === 'medium' ? '70%' : '100%') + '">' + (b.caption ? '<figcaption style="color:#888;font-size:12px">' + esc(b.caption) + '</figcaption>' : '') + '</figure>';
+          case 'table': return '<table>' + (b.rows || []).map(function (r, ri) { return '<tr>' + r.map(function (c) { return ri === 0 ? '<th>' + c + '</th>' : '<td>' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</table>';
+          case 'code': return '<pre>' + esc(b.code) + '</pre>';
+          case 'divider': return '<hr>';
+        }
+        return '';
+      }).join('');
+    }
+    function openHistory() {
+      var overlay = document.createElement('div');
+      overlay.className = 'be-picker ed-history';
+      overlay.innerHTML =
+        '<div class="box">' +
+        '  <div class="hist-list"><div class="hist-head"><span>버전 이력</span><button type="button" class="be-btn" id="histClose">닫기</button></div><div id="histItems"><div class="hist-empty">불러오는 중…</div></div></div>' +
+        '  <div class="hist-view" id="histView"><div class="hist-empty">왼쪽에서 버전을 선택하면 내용을 보여줍니다.<br><br>임시저장·완료(발행)할 때마다 이력이 남고, 발행 이력은 모두, 그 외는 최근 20개를 보관합니다.</div></div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      function close() { overlay.remove(); document.removeEventListener('keydown', onKey); }
+      function onKey(e) { if (e.key === 'Escape') close(); }
+      document.addEventListener('keydown', onKey);
+      overlay.querySelector('#histClose').addEventListener('click', close);
+      overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) close(); });
+      var items = overlay.querySelector('#histItems'), view = overlay.querySelector('#histView');
+      fetch(versionsUrl, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (list) {
+        items.innerHTML = '';
+        if (!list.length) { items.innerHTML = '<div class="hist-empty">아직 저장된 이력이 없습니다.</div>'; return; }
+        list.forEach(function (v, i) {
+          var b = document.createElement('button');
+          b.type = 'button'; b.className = 'hist-item';
+          b.innerHTML = '<b>' + esc(v.title || '(제목 없음)') + '<span class="hist-tag ' + esc(v.reason) + '">' + esc(v.reasonLabel) + '</span></b><small>#' + v.id + ' · ' + esc(v.createdAt) + ' · ' + esc(v.creatorName || '') + ' · ' + esc(v.statusLabel) + '</small>';
+          b.addEventListener('click', function () { show(v.id, b); });
+          items.appendChild(b);
+          if (i === 0) show(v.id, b);
+        });
+      }).catch(function () { items.innerHTML = '<div class="hist-empty">이력을 불러오지 못했습니다.</div>'; });
+      function show(id, btn) {
+        Array.prototype.forEach.call(items.querySelectorAll('.hist-item'), function (x) { x.classList.toggle('on', x === btn); });
+        view.innerHTML = '<div class="hist-empty">불러오는 중…</div>';
+        fetch(versionsUrl + '/' + id, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (v) {
+          view.innerHTML =
+            '<div class="hist-meta">#' + v.id + ' · ' + esc(v.reasonLabel) + ' · ' + esc(v.createdAt) + ' · ' + esc(v.creatorName || '') + ' · 상태 ' + esc(v.statusLabel) + (v.categoryName ? ' · ' + esc(v.categoryName) : '') + '</div>' +
+            '<h3 class="hist-title">' + esc(v.title) + '</h3>' +
+            (v.summary ? '<div class="hist-meta">요약: ' + esc(v.summary) + '</div>' : '') +
+            '<div class="hist-body">' + renderBlocks(v.blocks) + '</div>' +
+            '<div class="hist-actions">' +
+            '  <button type="button" class="be-btn" id="histLoad" title="저장하지 않고 편집기에만 불러옵니다">편집기에 불러오기</button>' +
+            '  <button type="button" class="be-btn pri" id="histRestore" title="현재 내용을 백업으로 남기고 이 버전으로 되돌립니다">이 버전으로 복원</button>' +
+            '</div>';
+          view.querySelector('#histLoad').addEventListener('click', function () {
+            titleEl.value = v.title || ''; summaryEl.value = v.summary || '';
+            if (v.categoryId) form.querySelector('[name="categoryId"]').value = v.categoryId;
+            editor.setBlocks(v.blocks || []); markDirty(); close();
+            notify('버전 #' + v.id + ' 내용을 불러왔습니다. 임시저장 또는 완료를 눌러야 서버에 반영됩니다.');
+          });
+          view.querySelector('#histRestore').addEventListener('click', function () {
+            if (!window.confirm('현재 내용을 "복원 전 백업"으로 남기고 버전 #' + v.id + ' (' + v.createdAt + ') 으로 되돌릴까요?\n공개 상태는 바뀌지 않습니다.')) return;
+            var rf = document.getElementById('restoreForm');
+            rf.action = versionsUrl + '/' + v.id + '/restore';
+            var meta = document.querySelector('meta[name="_csrf"]');
+            if (meta && meta.content) { var inp = document.createElement('input'); inp.type = 'hidden'; inp.name = '_csrf'; inp.value = meta.content; rf.appendChild(inp); }
+            submitting = true; rf.submit();
+          });
+        }).catch(function () { view.innerHTML = '<div class="hist-empty">버전을 불러오지 못했습니다.</div>'; });
+      }
+    }
   })();
 </script>
 </body>
