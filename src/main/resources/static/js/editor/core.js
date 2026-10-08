@@ -1,7 +1,7 @@
 /*
  * AICA 블록 에디터 — core: 상수 · DOM 유틸 · CSRF/토스트 · 선택 영역 · 인라인 HTML 정화 · 이미지 축소/업로드 · URL 검증
  *
- * 로드 순서: core → blocks → render → input → dialogs → toolbar → index (editor.html 의 <script> 순서와 같아야 한다)
+ * 로드 순서: core → blocks → render → input → dialogs → toolbar → image-editor → index (editor.html 의 <script> 순서와 같아야 한다)
  * 블록 JSON 형식은 서버 editor/BlockContent.java · 프론트 front/blocks.html 과 같다:
  *   heading{level,html} paragraph{align,html} image{url,alt,caption,width,align,link} quote{html}
  *   list{style,items[]} divider{} table{rows[][]} code{lang,code}
@@ -81,7 +81,10 @@
 
   function upload(file, url) {
     return prepareImage(file).then(function (f) {
-      if (f.size > MAX_UPLOAD) throw new Error('이미지는 10MB 이하만 올릴 수 있습니다 (현재 ' + (f.size / 1024 / 1024).toFixed(1) + 'MB).');
+      // 이미지는 10MB, 그 밖(동영상·문서)은 자산 관리 한도(200MB)까지 — 최종 판정은 서버(ImageStorageService)
+      var isImg = /^image\//.test(f.type) || !/\.(mp4|m4v|mov|webm|pdf)$/i.test(f.name || '');
+      var limit = isImg ? MAX_UPLOAD : 200 * 1024 * 1024;
+      if (f.size > limit) throw new Error((isImg ? '이미지는 10MB' : '파일은 200MB') + ' 이하만 올릴 수 있습니다 (현재 ' + (f.size / 1024 / 1024).toFixed(1) + 'MB).');
       var fd = new FormData();
       fd.append('file', f, f.name);
       return fetch(url, { method: 'POST', body: fd, headers: csrf(), credentials: 'same-origin' })

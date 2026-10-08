@@ -49,17 +49,19 @@ public class PublicApiController {
 
     @GetMapping("/categories")
     public List<Map<String, Object>> categories() {
-        return categoryService.findActive().stream().map(PublicApiController::categoryJson).toList();
+        // 2단 트리: [{id,name,slug,...,children:[...]}] — 프론트 탭(후기 → 생활·수업… / 기수별 → 3~5기·6기·7기)
+        return categoryService.tree().stream().map(PublicApiController::categoryJson).toList();
     }
 
     @GetMapping("/posts")
     public Map<String, Object> posts(@RequestParam(required = false) String category,
+                                     @RequestParam(required = false) String sub,
                                      @RequestParam(defaultValue = "1") int page,
                                      @RequestParam(defaultValue = "10") int size) {
         int safeSize = Math.min(Math.max(size, 1), 50);
         int safePage = Math.max(page, 1);
-        List<Post> items = postMapper.findPublished(category, (safePage - 1) * safeSize, safeSize);
-        long total = postMapper.countPublished(category);
+        List<Post> items = postMapper.findPublished(category, sub, (safePage - 1) * safeSize, safeSize);
+        long total = postMapper.countPublished(category, sub);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("page", safePage);
         body.put("size", safeSize);
@@ -72,7 +74,10 @@ public class PublicApiController {
     public Map<String, Object> post(@PathVariable Long id) {
         Post post = postService.getPublished(id);
         Map<String, Object> json = postJson(post, true);
-        json.put("blocks", postService.blocksOf(post));
+        var blocks = postService.blocksOf(post);
+        json.put("blocks", blocks);
+        json.put("layout", postService.layoutOf(post).toMap());   // 프론트가 같은 규칙으로 화면을 구성
+        json.put("toc", postService.tocOf(blocks));
         return json;
     }
 
@@ -111,6 +116,10 @@ public class PublicApiController {
         m.put("slug", c.getSlug());
         m.put("description", c.getDescription());
         m.put("postCount", c.getPostCount());
+        m.put("parentId", c.getParentId());
+        if (c.isTop()) {
+            m.put("children", c.getChildren().stream().map(PublicApiController::categoryJson).toList());
+        }
         return m;
     }
 
@@ -122,6 +131,8 @@ public class PublicApiController {
         m.put("thumbnailUrl", p.getThumbnailUrl());
         m.put("category", p.getCategoryName());
         m.put("categorySlug", p.getCategorySlug());
+        m.put("subCategory", p.getSubCategoryName());
+        m.put("subCategorySlug", p.getSubCategorySlug());
         m.put("author", p.getAuthorName());
         m.put("viewCount", p.getViewCount());
         m.put("publishedAt", p.getPublishedAt());

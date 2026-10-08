@@ -164,10 +164,11 @@
         if (v && !validUrl(v)) { toast('http(s):// 로 시작하는 주소만 사용할 수 있습니다.', true); link.value = b.link || ''; return; }
         b.link = v; self.changed();
       } } });
+      var edit = el('button', { type: 'button', 'class': 'be-btn', text: '편집', title: '자르기 · 회전 · 밝기/대비 · 필터', on: { click: function () { if (self.openImageEditor) self.openImageEditor(b, draw); } } });
       var change = el('button', { type: 'button', 'class': 'be-btn', text: '이미지 변경', on: { click: function () { b.url = ''; draw(); self.changed(); } } });
       var open = el('a', { 'class': 'be-btn', text: '원본 보기', href: b.url, target: '_blank', rel: 'noopener' });
       body.appendChild(img);
-      body.appendChild(el('div', { 'class': 'be-meta' }, [alt, cap, width, align, link, change, open]));
+      body.appendChild(el('div', { 'class': 'be-meta' }, [alt, cap, width, align, link, edit, change, open]));
     }
     draw();
   };

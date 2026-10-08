@@ -277,7 +277,8 @@
         Array.prototype.forEach.call(text.querySelectorAll('li'), function (li) { var h = cleanInline(li); if (h) items.push(h); });
         return { type: 'list', style: b.style || 'bullet', items: items };
       }
-      case 'image': return b.url ? { type: 'image', url: b.url, alt: b.alt || '', caption: b.caption || '', width: b.width || 'full', align: b.align || 'center', link: b.link || '' } : null;
+      // 주소가 비어 있어도 '사진 자리'로 남긴다(템플릿 뼈대). 프론트는 빈 자리를 그리지 않는다
+      case 'image': return { type: 'image', url: b.url || '', alt: b.alt || '', caption: b.caption || '', width: b.width || 'full', align: b.align || 'center', link: b.link || '' };
       case 'table': {
         var rows = b.rows.map(function (r) { return r.map(function (c) { return c || ''; }); });
         var hasContent = rows.some(function (r) { return r.some(function (c) { return c.replace(/<br\s*\/?>/g, '').trim(); }); });

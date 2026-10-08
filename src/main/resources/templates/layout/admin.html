@@ -16,11 +16,11 @@
 <header class="gnb">
   <div class="gnb-inner">
     <a class="gnb-logo" th:href="@{/admin}" title="관리자 홈">
-      <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="12" cy="6" r="2.4"/><circle cx="6" cy="12" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="18" cy="12" r="2.4"/><circle cx="12" cy="18" r="2.4"/></svg>
+      <img th:src="@{/img/aica-logo.png}" alt="AICA">
     </a>
     <nav class="gnb-menu">
       <a th:href="@{/admin/posts}" th:classappend="${menu == 'posts'} ? 'on'">게시물</a>
-      <a th:href="@{/admin/categories}" th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'categories'} ? 'on'">카테고리</a>
+      <a th:href="@{/admin/media}" th:classappend="${menu == 'media'} ? 'on'">미디어</a>
       <a th:href="@{/admin/faq}" th:classappend="${menu == 'faq'} ? 'on'">FAQ</a>
       <a th:href="@{/admin/stats}" th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'stats'} ? 'on'">통계</a>
     </nav>
@@ -46,6 +46,24 @@
   </div>
 </header>
 
+<!-- ===== 운영진 공지 띠 (최고관리자가 올림 · 운영진 전체 표시 · 개인별 닫기) ===== -->
+<div class="notice-band" th:if="${liveNotices != null and !#lists.isEmpty(liveNotices)}">
+  <details class="notice-item" th:each="n, st : ${liveNotices}" th:classappend="'nl-' + ${n.levelCss}" th:open="${st.index == 0 and n.body != null and n.level == 'URGENT'}">
+    <summary>
+      <span class="nl-tag" th:text="${n.levelLabel}">안내</span>
+      <span class="nl-title" th:text="${n.title}">공지 제목</span>
+      <span class="nl-meta" th:text="${n.creatorName != null} ? ${n.creatorName} + ' · ' + ${#temporals.format(n.createdAt, 'MM-dd')} : ${#temporals.format(n.createdAt, 'MM-dd')}">작성자</span>
+      <span class="nl-more" th:if="${n.body != null}">자세히</span>
+      <form th:unless="${n.pinned}" th:action="@{/admin/notices/{id}/dismiss(id=${n.id})}" method="post" class="nl-close">
+        <input type="hidden" name="back" th:value="${currentPath}">
+        <button type="submit" title="이 공지 닫기 (나에게만)">✕</button>
+      </form>
+      <span th:if="${n.pinned}" class="nl-pin" title="고정 공지는 닫을 수 없습니다">고정</span>
+    </summary>
+    <div class="nl-body" th:if="${n.body != null}" th:text="${n.body}">본문</div>
+  </details>
+</div>
+
 <!-- ===== 본문 ===== -->
 <div class="wrap">
   <div class="toast" th:if="${toast}" th:text="${toast}"></div>
@@ -70,7 +88,7 @@
       <summary>쓰기 <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></summary>
       <div class="write-drop">
         <a th:href="@{/admin/posts/new}">게시물 작성</a>
-        <a th:href="@{/admin/categories}" th:if="${me != null and me.role.canManageContent()}">카테고리 추가</a>
+        <a th:href="@{/admin/media}">미디어 업로드</a>
       </div>
     </details>
 
@@ -85,8 +103,9 @@
           <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg>
           콘텐츠
         </div>
-        <a th:classappend="${menu == 'posts'} ? 'on'" th:href="@{/admin/posts}">글 관리</a>
-        <a th:if="${me != null and me.role.canManageContent()}" th:classappend="${menu == 'categories'} ? 'on'" th:href="@{/admin/categories}">카테고리 관리</a>
+        <a th:classappend="${menu == 'posts'} ? 'on'" th:href="@{/admin/posts}">게시물 관리</a>
+        <a th:classappend="${menu == 'media'} ? 'on'" th:href="@{/admin/media}">미디어 관리</a>
+        <a th:classappend="${menu == 'templates'} ? 'on'" th:href="@{/admin/templates}">템플릿 관리</a>
         <a th:classappend="${menu == 'faq'} ? 'on'" th:href="@{/admin/faq}">FAQ 관리</a>
       </div>
 
@@ -96,6 +115,7 @@
           통계
         </div>
         <a th:classappend="${menu == 'stats'} ? 'on'" th:href="@{/admin/stats}">방문 통계</a>
+        <a th:classappend="${menu == 'notices'} ? 'on'" th:href="@{/admin/notices}">운영진 공지</a>
       </div>
 
       <div class="lnb-group">

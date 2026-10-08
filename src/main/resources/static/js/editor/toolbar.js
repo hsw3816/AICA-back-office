@@ -185,7 +185,7 @@
       self.setFocus(n); self.changed();
     }
     ins.appendChild(tool('+ 사진', '이미지 업로드 — 여러 장 선택 가능 · 본문에 붙여넣기/드래그도 됩니다', function () { tbFile.click(); }, 'pri'));
-    ins.appendChild(tool('보관함', '최근 업로드한 이미지에서 선택', function () { self.openPicker(insertImageUrl); }));
+    ins.appendChild(tool('보관함', '미디어 관리에 올려 둔 이미지에서 선택 (카테고리별)', function () { self.openPicker(insertImageUrl); }));
     ins.appendChild(tool('링크', '링크 넣기 (Ctrl+K)', function () { self.openLinkDialog(); }));
     ins.appendChild(tool('표', '표 삽입', function () { self.addBlock('table'); }));
     ins.appendChild(tool('인용구', '인용구', function () { var f = self.focused(); if (f && f._block.type !== 'quote' && isTextBlock(f)) self.convert('quote'); else self.addBlock('quote'); }));

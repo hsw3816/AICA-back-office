@@ -45,7 +45,7 @@
         <li><span>게시중</span><span class="bar"><i th:style="'width:' + ${stats.publishedPosts * 100 / total} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(stats.publishedPosts * 100.0 / total, 1, 1)} + '%'">0%</span></li>
         <li><span>임시저장</span><span class="bar"><i class="c2" th:style="'width:' + ${stats.draftPosts * 100 / total} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(stats.draftPosts * 100.0 / total, 1, 1)} + '%'">0%</span></li>
         <li><span>답변대기</span><span class="bar"><i class="c4" th:style="'width:' + ${stats.pendingPosts * 100 / total} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(stats.pendingPosts * 100.0 / total, 1, 1)} + '%'">0%</span></li>
-        <li><span>숨김</span><span class="bar"><i class="c3" th:style="'width:' + ${stats.hiddenPosts * 100 / total} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(stats.hiddenPosts * 100.0 / total, 1, 1)} + '%'">0%</span></li>
+        <li><span>미게시</span><span class="bar"><i class="c3" th:style="'width:' + ${stats.hiddenPosts * 100 / total} + '%'"></i></span><span class="p" th:text="${#numbers.formatDecimal(stats.hiddenPosts * 100.0 / total, 1, 1)} + '%'">0%</span></li>
       </ul>
       <div class="muted" style="font-size:11px;margin-top:10px">
         전체 <b th:text="${stats.totalPosts}">0</b>건 · 7일 게시물 조회 <b th:text="${#numbers.formatInteger(weekly.periodPostViews, 1, 'COMMA')}">0</b>회

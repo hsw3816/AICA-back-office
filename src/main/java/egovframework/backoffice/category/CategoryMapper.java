@@ -14,6 +14,9 @@ public interface CategoryMapper {
 
     Category findBySlug(@Param("slug") String slug);
 
+    /** 특정 카테고리의 세부 카테고리(활성만) */
+    List<Category> findActiveChildren(@Param("parentId") Long parentId);
+
     int insert(Category category);
 
     int update(Category category);

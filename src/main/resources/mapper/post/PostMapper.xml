@@ -3,14 +3,16 @@
 <mapper namespace="egovframework.backoffice.post.PostMapper">
 
   <sql id="columns">
-    p.id, p.category_id, p.title, p.summary, p.thumbnail_url, p.thumbnail_mode, p.status,
-    p.author_id, p.view_count, p.published_at, p.created_at, p.updated_at, p.deleted_at,
-    c.name AS category_name, c.slug AS category_slug, u.name AS author_name
+    p.id, p.category_id, p.sub_category_id, p.title, p.summary, p.thumbnail_url, p.thumbnail_mode, p.status,
+    p.author_id, p.view_count, p.published_at, p.created_at, p.updated_at, p.deleted_at, p.layout_json, p.status_before_trash,
+    c.name AS category_name, c.slug AS category_slug, sc.name AS sub_category_name, sc.slug AS sub_category_slug,
+    u.name AS author_name
   </sql>
 
   <sql id="joins">
     FROM posts p
     LEFT JOIN categories c ON c.id = p.category_id
+    LEFT JOIN categories sc ON sc.id = p.sub_category_id
     LEFT JOIN admin_users u ON u.id = p.author_id
   </sql>
 
@@ -22,9 +24,17 @@
     <if test="s.categoryId != null">
       AND p.category_id = #{s.categoryId}
     </if>
+    <if test="s.subCategoryId != null">
+      AND p.sub_category_id = #{s.subCategoryId}
+    </if>
     <if test="s.keyword != null and s.keyword != ''">
       AND (LOWER(p.title) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
-           OR LOWER(COALESCE(p.summary, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%')))
+           OR LOWER(COALESCE(p.summary, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(u.name, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%'))
+           OR LOWER(COALESCE(u.login_id, '')) LIKE LOWER(CONCAT('%', #{s.keyword}, '%')))
+    </if>
+    <if test="s.authorId != null">
+      AND p.author_id = #{s.authorId}
     </if>
   </sql>
 
@@ -61,6 +71,9 @@
     <if test="categorySlug != null and categorySlug != ''">
       AND c.slug = #{categorySlug}
     </if>
+    <if test="subSlug != null and subSlug != ''">
+      AND sc.slug = #{subSlug}
+    </if>
     ORDER BY p.published_at DESC, p.id DESC
     LIMIT #{limit} OFFSET #{offset}
   </select>
@@ -72,31 +85,37 @@
     <if test="categorySlug != null and categorySlug != ''">
       AND c.slug = #{categorySlug}
     </if>
+    <if test="subSlug != null and subSlug != ''">
+      AND sc.slug = #{subSlug}
+    </if>
   </select>
 
   <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-    INSERT INTO posts (category_id, title, summary, thumbnail_url, thumbnail_mode, status, blocks_json,
+    INSERT INTO posts (category_id, sub_category_id, title, summary, thumbnail_url, thumbnail_mode, status, blocks_json, layout_json,
                        author_id, published_at)
-    VALUES (#{categoryId}, #{title}, #{summary}, #{thumbnailUrl}, #{thumbnailMode}, #{status}, #{blocksJson},
+    VALUES (#{categoryId}, #{subCategoryId}, #{title}, #{summary}, #{thumbnailUrl}, #{thumbnailMode}, #{status}, #{blocksJson}, #{layoutJson},
             #{authorId}, #{publishedAt})
   </insert>
 
   <update id="update">
     UPDATE posts
        SET category_id = #{categoryId},
+           sub_category_id = #{subCategoryId},
            title = #{title},
            summary = #{summary},
            thumbnail_url = #{thumbnailUrl},
            thumbnail_mode = #{thumbnailMode},
            status = #{status},
            blocks_json = #{blocksJson},
+           layout_json = #{layoutJson},
            published_at = #{publishedAt},
            updated_at = CURRENT_TIMESTAMP
      WHERE id = #{id} AND deleted_at IS NULL
   </update>
 
   <update id="softDelete">
-    UPDATE posts SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+    UPDATE posts SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP,
+           status_before_trash = status, status = 'HIDDEN'
      WHERE id = #{id} AND deleted_at IS NULL
   </update>
 

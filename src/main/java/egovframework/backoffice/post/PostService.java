@@ -92,4 +92,31 @@ public class PostService {
     public List<Map<String, Object>> blocksOf(Post post) {
         return assembler.blocksOf(post.getBlocksJson());
     }
+
+    /** 화면 레이아웃(없으면 기본값) */
+    public egovframework.backoffice.editor.PostLayout layoutOf(Post post) {
+        return assembler.layoutOf(post.getLayoutJson());
+    }
+
+    /** 목차 위젯용 제목 목록 */
+    public List<Map<String, Object>> tocOf(List<Map<String, Object>> blocks) {
+        return assembler.toc(blocks);
+    }
+
+    /** 사이드바·하단 위젯용: 최근 게시 글(현재 글 제외) */
+    @Transactional(readOnly = true)
+    public List<Post> recentPublished(Long excludeId, int limit) {
+        return exclude(mapper.findPublished(null, null, 0, limit + 1), excludeId, limit);
+    }
+
+    /** 사이드바·하단 위젯용: 같은 카테고리의 게시 글(현재 글 제외). 카테고리가 없으면 최근 글 */
+    @Transactional(readOnly = true)
+    public List<Post> relatedPublished(Post post, int limit) {
+        String slug = post.getCategorySlug();
+        return exclude(mapper.findPublished(slug == null || slug.isBlank() ? null : slug, null, 0, limit + 1), post.getId(), limit);
+    }
+
+    private static List<Post> exclude(List<Post> items, Long excludeId, int limit) {
+        return items.stream().filter(p -> excludeId == null || !excludeId.equals(p.getId())).limit(limit).toList();
+    }
 }

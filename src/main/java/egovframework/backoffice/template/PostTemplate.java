@@ -13,6 +13,8 @@ public class PostTemplate {
     private String titleHint;
     private Long categoryId;
     private String blocksJson;
+    /** 화면 레이아웃(PostLayout JSON). NULL 이면 기본 레이아웃 */
+    private String layoutJson;
     private Long createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

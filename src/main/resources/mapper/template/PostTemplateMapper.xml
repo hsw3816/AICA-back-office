@@ -3,7 +3,7 @@
 <mapper namespace="egovframework.backoffice.template.PostTemplateMapper">
 
   <sql id="columns">
-    t.id, t.name, t.title_hint, t.category_id, t.blocks_json, t.created_by, t.created_at, t.updated_at,
+    t.id, t.name, t.title_hint, t.category_id, t.blocks_json, t.layout_json, t.created_by, t.created_at, t.updated_at,
     u.name AS creator_name, c.name AS category_name
   </sql>
   <sql id="joins">
@@ -26,14 +26,14 @@
   </select>
 
   <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-    INSERT INTO post_templates (name, title_hint, category_id, blocks_json, created_by)
-    VALUES (#{name}, #{titleHint}, #{categoryId}, #{blocksJson}, #{createdBy})
+    INSERT INTO post_templates (name, title_hint, category_id, blocks_json, layout_json, created_by)
+    VALUES (#{name}, #{titleHint}, #{categoryId}, #{blocksJson}, #{layoutJson}, #{createdBy})
   </insert>
 
   <update id="update">
     UPDATE post_templates
        SET name = #{name}, title_hint = #{titleHint}, category_id = #{categoryId},
-           blocks_json = #{blocksJson}, updated_at = CURRENT_TIMESTAMP
+           blocks_json = #{blocksJson}, layout_json = #{layoutJson}, updated_at = CURRENT_TIMESTAMP
      WHERE id = #{id}
   </update>
 

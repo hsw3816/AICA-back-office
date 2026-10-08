@@ -61,7 +61,7 @@ public class PostVersionService {
 
     /**
      * 선택한 버전으로 되돌린다. 현재 내용을 먼저 '복원 전 백업'으로 남기고,
-     * 제목·요약·카테고리·본문·대표이미지를 스냅샷 값으로 교체한다. 공개 상태(status)는 바꾸지 않는다.
+     * 제목·요약·카테고리·본문·대표이미지·레이아웃을 스냅샷 값으로 교체한다. 공개 상태(status)는 바꾸지 않는다.
      */
     public void restore(Long postId, Long versionId, Long adminId) {
         Post post = livePost(postId);
@@ -72,10 +72,12 @@ public class PostVersionService {
         form.setTitle(v.getTitle());
         form.setSummary(v.getSummary());
         form.setCategoryId(v.getCategoryId());
+        form.setSubCategoryId(v.getSubCategoryId());
         form.setThumbnailMode(v.getThumbnailMode());
         form.setThumbnailUrl(v.getThumbnailUrl());
         form.setStatus(post.getStatus());
         form.setBlocksJson(v.getBlocksJson());
+        form.setLayoutJson(v.getLayoutJson());
         assembler.apply(post, form);
         posts.update(post);
         record(post, PostVersion.RESTORE, adminId);

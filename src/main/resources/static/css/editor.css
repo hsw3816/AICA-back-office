@@ -162,3 +162,75 @@
 .tpl-meta { font-size: 11px; color: #aaa; margin-top: 4px; }
 .tpl-actions { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
 .tpl-actions .be-btn { height: 26px; padding: 0 8px; font-size: 12px; }
+
+/* ---------- 레이아웃 패널 (template/_layout-panel.html · js/template/layout-panel.js) ---------- */
+.lo-panel { border: 1px solid var(--ed-line); border-radius: 8px; background: #fff; }
+.lo-body { padding: 14px 18px 16px; }
+.lo-sec-title { font-size: 13px; font-weight: 700; color: #111; margin: 6px 0 10px; display: flex; flex-direction: column; gap: 2px; }
+.lo-sec-title .ed-help { font-weight: 400; }
+.lo-presets { display: flex; gap: 10px; margin-bottom: 14px; }
+.lo-preset-group { border: 1px solid #f0b4ae; border-radius: 6px; padding: 18px 8px 8px; display: flex; gap: 6px; position: relative; }
+.lo-preset-group-label { position: absolute; top: -1px; left: 8px; transform: translateY(-50%); background: #fff; padding: 0 4px; font-size: 10px; color: #c0392b; font-weight: 700; }
+.lo-preset { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 70px; padding: 6px 4px; border: 1px solid transparent; border-radius: 6px; background: none; font-size: 11px; color: #444; cursor: pointer; }
+.lo-preset:hover { background: #f5f7fb; }
+.lo-preset.on { border-color: #111; background: #f5f7fb; color: #111; font-weight: 700; }
+.lo-mini { width: 54px; height: 44px; border: 1px solid #c9ced8; border-radius: 3px; background: #fff; padding: 4px; display: flex; flex-direction: column; gap: 3px; }
+.lo-mini.wide { padding: 4px 2px; }
+.lo-mini i { display: block; border-radius: 1px; background: #d7dbe3; }
+.lo-mini .t { height: 5px; width: 70%; } .lo-mini.wide .t { width: 90%; }
+.lo-mini .b { flex: 1; width: 70%; background: #eceff4; border: 1px dashed #c9ced8; } .lo-mini.wide .b { width: 100%; }
+.lo-mini .img { height: 12px; width: 100%; background: #9fb6e5; }
+.lo-mini .row { display: flex; gap: 3px; flex: 1; }
+.lo-mini .row i { height: auto; } .lo-mini .half { width: 50%; } .lo-mini .row .t.half { height: 6px; align-self: start; }
+.lo-mini .s { width: 12px; background: #c6d4ef; } .lo-mini .grow { flex: 1; width: auto; }
+.lo-preset.on .lo-mini { border-color: #111; }
+.lo-settings { display: flex; gap: 18px; padding: 10px 12px; background: #f7f8fa; border-radius: 6px; margin-bottom: 16px; font-size: 13px; flex-wrap: wrap; }
+.lo-setting { display: flex; align-items: center; gap: 10px; }
+.lo-setting-label { font-weight: 700; color: #333; min-width: 54px; }
+.lo-setting label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.lo-canvas { background: #7f8691; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.lo-zone { background: rgba(255,255,255,.08); border: 1px dashed rgba(255,255,255,.35); border-radius: 6px; padding: 8px; transition: background .12s, border-color .12s; }
+.lo-zone.can-drop { border-color: #ffe27a; border-style: solid; }
+.lo-zone.over { background: rgba(255,226,122,.22); }
+.lo-zone-label { font-size: 11px; color: #e9ecf1; font-weight: 700; margin-bottom: 6px; display: flex; gap: 6px; align-items: baseline; }
+.lo-zone-label .ed-help { color: #cfd4dc; font-weight: 400; }
+.lo-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; align-content: flex-start; }
+.lo-chips-col { flex-direction: column; flex-wrap: nowrap; }
+.lo-chip { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 6px 0 6px; border-radius: 4px; background: #f4f6f9; border: 1px solid #c9ced8; font-size: 12px; color: #222; cursor: grab; user-select: none; box-shadow: 0 1px 0 rgba(0,0,0,.06); }
+.lo-chip.widget { background: #eef3ff; border-color: #b9c9ee; }
+.lo-chip.fixed { cursor: default; color: #555; background: #e8eaee; }
+.lo-chip .grip { color: #9aa3b0; font-size: 10px; letter-spacing: -2px; }
+.lo-chip.fixed .grip { visibility: hidden; }
+.lo-chip-x { border: 0; background: none; color: #888; cursor: pointer; font-size: 11px; padding: 0 2px; margin-left: 2px; }
+.lo-chip-x:hover { color: #c0392b; }
+.lo-chip.dragging { opacity: .4; }
+.lo-middle { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px; min-height: 150px; }
+.lo-middle.side-right { grid-template-columns: minmax(0, 1fr) 150px; }
+.lo-middle.side-right .lo-zone-side { order: 2; }
+.lo-middle.no-side { grid-template-columns: 1fr; }
+.lo-middle.no-side .lo-zone-side { display: none; }
+.lo-main { background: #e9ecf1; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #4a5160; font-weight: 700; font-size: 13px; min-height: 150px; }
+.lo-main small { font-weight: 400; color: #7a8290; font-size: 11px; margin-top: 2px; }
+.lo-tray { margin-top: 10px; border: 1px dashed #c9ced8; border-radius: 6px; padding: 8px; }
+.lo-tray .lo-zone-label { color: #555; } .lo-tray .lo-zone-label .ed-help { color: #999; }
+.lo-tray.can-drop { border-color: #f0b429; border-style: solid; } .lo-tray.over { background: #fff8e1; }
+.lo-empty { font-size: 11px; color: rgba(255,255,255,.75); padding: 6px 2px; }
+.lo-tray .lo-empty { color: #999; }
+.lo-tray .lo-chip-x { display: none; }
+.lo-note { margin-top: 12px; line-height: 1.7; }
+.lo-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lo-foot .ed-help { text-align: right; }
+
+/* ---------- 템플릿 관리 편집 화면 (template/editor.html) ---------- */
+.tpl-grid { grid-template-columns: minmax(0, 1fr); max-width: 960px; }
+.tpl-grid .ed-col { max-width: none; }
+.tpl-fields { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 18px; margin-bottom: 16px; }
+.ed-input { width: 100%; border: 1px solid var(--ed-line); border-radius: 6px; padding: 10px 12px; background: #fff; color: var(--ed-text); font-size: 14px; }
+.ed-input:focus { outline: 2px solid #abc0ff; border-color: #6688f1; }
+.tpl-quick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 12px; background: #f7f8fa; border: 1px solid var(--ed-line); border-bottom: 0; border-radius: 8px 8px 0 0; font-size: 12px; }
+.tpl-quick + .ed-box { border-radius: 0 0 8px 8px; }
+.tpl-quick-label { font-weight: 700; color: #3e5478; margin-right: 2px; }
+.tpl-quick-sep { width: 1px; height: 18px; background: var(--ed-line); margin: 0 6px; }
+.alert.error { background: #fdf3f2; border: 1px solid #f3c4bf; color: #c0392b; padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; }
+
+.ed-select.is-off { color: #9aa7bd; background: #f3f5f9; }

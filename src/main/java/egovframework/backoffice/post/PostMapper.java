@@ -15,10 +15,10 @@ public interface PostMapper {
     /** 프론트 공개용: 게시중 + 미삭제 */
     Post findPublishedById(@Param("id") Long id);
 
-    List<Post> findPublished(@Param("categorySlug") String categorySlug,
+    List<Post> findPublished(@Param("categorySlug") String categorySlug, @Param("subSlug") String subSlug,
                              @Param("offset") int offset, @Param("limit") int limit);
 
-    long countPublished(@Param("categorySlug") String categorySlug);
+    long countPublished(@Param("categorySlug") String categorySlug, @Param("subSlug") String subSlug);
 
     int insert(Post post);
 

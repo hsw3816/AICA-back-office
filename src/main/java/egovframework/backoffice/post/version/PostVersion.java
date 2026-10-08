@@ -22,10 +22,12 @@ public class PostVersion {
     private String title;
     private String summary;
     private Long categoryId;
+    private Long subCategoryId;
     private String thumbnailUrl;
     private String thumbnailMode;
     private PostStatus status;
     private String blocksJson;
+    private String layoutJson;
     private Long createdBy;
     private LocalDateTime createdAt;
 
@@ -49,10 +51,12 @@ public class PostVersion {
         v.setTitle(p.getTitle());
         v.setSummary(p.getSummary());
         v.setCategoryId(p.getCategoryId());
+        v.setSubCategoryId(p.getSubCategoryId());
         v.setThumbnailUrl(p.getThumbnailUrl());
         v.setThumbnailMode(p.getThumbnailMode());
         v.setStatus(p.getStatus());
         v.setBlocksJson(p.getBlocksJson());
+        v.setLayoutJson(p.getLayoutJson());
         v.setCreatedBy(adminId);
         return v;
     }

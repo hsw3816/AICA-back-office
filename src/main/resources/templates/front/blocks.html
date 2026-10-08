@@ -15,14 +15,14 @@
     </div>
 
     <!-- 제목 -->
-    <div class="blk blk-heading" th:if="${b['type'] == 'heading'}">
+    <div class="blk blk-heading" th:if="${b['type'] == 'heading'}" th:id="'h-' + ${bStat.index}">
       <h1 th:if="${b['level'] == 1}" th:utext="${b['html']}"></h1>
       <h2 th:if="${b['level'] == 2 or b['level'] == null}" th:utext="${b['html']}"></h2>
       <h3 th:if="${b['level'] == 3}" th:utext="${b['html']}"></h3>
     </div>
 
-    <!-- 이미지 -->
-    <div class="blk blk-image" th:if="${b['type'] == 'image'}" th:classappend="'w-' + ${b['width'] ?: 'full'} + ' a-' + ${b['align'] ?: 'center'}">
+    <!-- 이미지 (주소가 비어 있는 '사진 자리'는 표시하지 않음) -->
+    <div class="blk blk-image" th:if="${b['type'] == 'image' and !#strings.isEmpty(b['url'])}" th:classappend="'w-' + ${b['width'] ?: 'full'} + ' a-' + ${b['align'] ?: 'center'}">
       <figure>
         <a th:if="${!#strings.isEmpty(b['link'])}" th:href="${b['link']}" target="_blank" rel="noopener noreferrer"><img th:src="${b['url']}" th:alt="${b['alt']}" loading="lazy"></a>
         <img th:unless="${!#strings.isEmpty(b['link'])}" th:src="${b['url']}" th:alt="${b['alt']}" loading="lazy">

@@ -29,11 +29,22 @@ public class SecurityConfig {
                 .requestMatchers("/uploads/**", "/api/public/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/admin/users/**").hasRole(AdminRole.SUPER_ADMIN.name())
-                // SUPPORT 는 게시물 등록·수정만: 삭제·휴지통·상태 변경·카테고리 변경·통계는 관리자 이상
+                // SUPPORT 는 게시물 등록·수정만: 삭제·휴지통·상태 변경·통계는 관리자 이상
                 .requestMatchers("/admin/posts/trash", "/admin/posts/*/delete", "/admin/posts/*/restore",
                         "/admin/posts/*/purge", "/admin/posts/*/status", "/admin/stats/**").hasAnyRole(
                         AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
-                .requestMatchers(HttpMethod.POST, "/admin/categories/**").hasAnyRole(
+                // 운영진 공지: 보기·닫기는 전원, 작성·수정·내리기·삭제는 최고관리자
+                .requestMatchers("/admin/notices/*/dismiss").authenticated()
+                .requestMatchers(HttpMethod.POST, "/admin/notices/**").hasRole(AdminRole.SUPER_ADMIN.name())
+                // 템플릿 관리: 보기·불러오기는 전원, 생성·수정·삭제는 관리자 이상
+                .requestMatchers(HttpMethod.POST, "/admin/templates/**").hasAnyRole(
+                        AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
+                .requestMatchers(HttpMethod.PUT, "/admin/templates/**").hasAnyRole(
+                        AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
+                .requestMatchers(HttpMethod.DELETE, "/admin/templates/**").hasAnyRole(
+                        AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
+                // 미디어 관리: 업로드·보기는 전원, 분류 이동·이름 변경·삭제는 관리자 이상
+                .requestMatchers("/admin/media/*/move", "/admin/media/*/rename", "/admin/media/*/delete").hasAnyRole(
                         AdminRole.SUPER_ADMIN.name(), AdminRole.ADMIN.name())
                 .anyRequest().authenticated())
             .formLogin(form -> form

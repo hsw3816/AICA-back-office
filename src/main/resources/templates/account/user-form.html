@@ -13,10 +13,10 @@
           <div th:each="e : ${#fields.globalErrors()}" th:text="${e}"></div>
         </div>
         <div class="form-grid">
-          <label class="lbl req" for="loginId">로그인 ID</label>
+          <label class="lbl req" for="loginId">이메일 (로그인 ID)</label>
           <div>
-            <input class="input wide mono" th:field="*{loginId}" id="loginId" maxlength="50" th:readonly="${form.id != null}">
-            <div class="help" th:if="${form.id == null}">영문·숫자·. _ - 조합 3~50자. 등록 후에는 변경할 수 없습니다.</div>
+            <input class="input wide mono" th:field="*{loginId}" id="loginId" type="email" maxlength="120" placeholder="hong@aica-gj.kr" autocomplete="off" th:readonly="${form.id != null}">
+            <div class="help" th:if="${form.id == null}">이메일 주소가 로그인 ID 가 됩니다. 등록 후에는 변경할 수 없습니다.</div>
             <div class="field-error" th:if="${#fields.hasErrors('loginId')}" th:errors="*{loginId}"></div>
           </div>
 

@@ -4,6 +4,17 @@
 $ErrorActionPreference = "Continue"
 $root = Split-Path -Parent $PSScriptRoot
 $files = @(
+  # 미디어 분류를 게시물 카테고리로 통일(2026-10)하면서 빠진 폴더 기능 파일
+  "src\main\java\egovframework\backoffice\media\ImageFolder.java",
+  "src\main\java\egovframework\backoffice\media\ImageFolderMapper.java",
+  "src\main\resources\mapper\media\ImageFolderMapper.xml",
+  # 레이아웃 설정을 글쓰기 → 템플릿 관리로 이동(2026-10)하면서 빠진 파일
+  "src\main\resources\templates\post\editor\_layout-panel.html",
+  "src\main\resources\static\js\post\layout.js",
+  # 카테고리 관리 화면 제거(2026-10) — 조회용 Service/Mapper 는 남김
+  "src\main\java\egovframework\backoffice\category\CategoryController.java",
+  "src\main\java\egovframework\backoffice\category\CategoryForm.java",
+  "src\main\resources\templates\category\list.html",
   "src\main\java\egovframework\backoffice\adminuser\AdminRole.java",
   "src\main\java\egovframework\backoffice\adminuser\AdminUser.java",
   "src\main\java\egovframework\backoffice\adminuser\AdminUserController.java",

@@ -13,11 +13,11 @@
         <a class="btn ghost sm" th:if="${search.keyword != null and !search.keyword.isBlank()}" th:href="@{/admin/posts/trash}">초기화</a>
         <span class="count">(표시 <span th:text="${#lists.size(result.items)}">0</span>건 / 총 <span th:text="${result.total}">0</span> 건)</span>
       </div>
-      <a class="btn ghost sm" th:href="@{/admin/posts}">← 글 관리</a>
+      <a class="btn ghost sm" th:href="@{/admin/posts}">← 게시물 관리</a>
     </form>
 
     <div class="trash-note">
-      휴지통의 글은 목록과 프론트에 노출되지 않습니다. <b>복원</b>하면 삭제 전 상태 그대로 글 관리로 돌아가고, <b>완전 삭제</b>하면 되돌릴 수 없습니다.
+      휴지통으로 옮긴 글은 <b>미게시</b>로 바뀌어 프론트에서 내려갑니다. <b>복원</b>해도 미게시 상태로 게시물 관리에 돌아오니 다시 공개하려면 '게시'를 눌러 주세요. <b>완전 삭제</b>는 되돌릴 수 없습니다.
     </div>
 
     <table class="list">
@@ -29,7 +29,7 @@
         <th style="width:90px">상태</th>
         <th style="width:110px">작성자</th>
         <th style="width:140px">삭제일</th>
-        <th style="width:170px" class="right">액션</th>
+        <th style="width:200px" class="right">액션</th>
       </tr>
       </thead>
       <tbody>
@@ -53,14 +53,18 @@
             </div>
           </div>
         </td>
-        <td th:text="${p.categoryName ?: '-'}">카테고리</td>
-        <td><span class="badge" th:classappend="${p.status.css}" th:text="${p.status.label}">상태</span></td>
+        <td th:text="${p.categoryPath ?: '-'}">카테고리</td>
+        <td>
+          <span class="badge" th:classappend="${p.status.css}" th:text="${p.status.label}">미게시</span>
+          <div class="muted" style="font-size:11px;margin-top:3px" th:if="${p.statusBeforeTrash != null and p.statusBeforeTrash != p.status}"
+               th:text="'삭제 전 ' + ${p.statusBeforeTrash.label}">삭제 전 게시중</div>
+        </td>
         <td class="nowrap" th:text="${p.authorName}">작성자</td>
         <td class="muted nowrap" th:text="${#temporals.format(p.deletedAt, 'yyyy-MM-dd HH:mm')}">-</td>
         <td class="right">
           <div class="actions">
             <form th:action="@{/admin/posts/{id}/restore(id=${p.id})}" method="post">
-              <button class="btn ghost xs accent" type="submit" title="글 관리로 복원">복원</button>
+              <button class="btn ghost xs accent" type="submit" title="게시물 관리로 복원">복원</button>
             </form>
             <form th:action="@{/admin/posts/{id}/purge(id=${p.id})}" method="post" data-confirm="이 게시물을 완전히 삭제할까요? 조회 기록까지 함께 지워지며 되돌릴 수 없습니다.">
               <button class="btn danger xs" type="submit">삭제</button>

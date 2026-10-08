@@ -16,8 +16,8 @@ spring:
     locations: classpath:db/migration
   servlet:
     multipart:
-      max-file-size: 20MB
-      max-request-size: 22MB
+      max-file-size: 200MB      # 동영상 한도(ImageStorageService.MAX_VIDEO)와 맞춘다
+      max-request-size: 205MB
 
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
@@ -30,8 +30,9 @@ server:
   tomcat:
     # 용량 초과 업로드도 연결을 끊지 않고 정상 오류 응답을 돌려주도록 (브라우저 "Failed to fetch" 방지)
     max-swallow-size: -1
-  address: 127.0.0.1
-  port: 8080
+  # 기본은 내 PC에서만 접속. 같은 네트워크의 다른 PC에 공유하려면 환경변수 BACKOFFICE_BIND=0.0.0.0 로 실행
+  address: ${BACKOFFICE_BIND:127.0.0.1}
+  port: ${BACKOFFICE_PORT:8080}
   error:
     include-message: never
     include-stacktrace: never

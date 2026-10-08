@@ -11,7 +11,7 @@
   </select>
 
   <select id="findByLoginId" resultType="AdminUser">
-    SELECT <include refid="columns"/> FROM admin_users WHERE login_id = #{loginId}
+    SELECT <include refid="columns"/> FROM admin_users WHERE LOWER(login_id) = LOWER(TRIM(#{loginId}))
   </select>
 
   <select id="findAll" resultType="AdminUser">

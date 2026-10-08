@@ -16,6 +16,7 @@ public class PostForm {
     private String title;
 
     private Long categoryId;
+    private Long subCategoryId;
 
     @Size(max = 500, message = "요약은 500자 이내입니다.")
     private String summary;
@@ -33,16 +34,21 @@ public class PostForm {
     @NotBlank(message = "본문을 입력하세요.")
     private String blocksJson = "[]";
 
+    /** 레이아웃 패널이 hidden input 으로 전송하는 JSON(PostLayout) — 비우면 기본 레이아웃 */
+    private String layoutJson;
+
     public static PostForm from(Post p) {
         PostForm f = new PostForm();
         f.setId(p.getId());
         f.setTitle(p.getTitle());
         f.setCategoryId(p.getCategoryId());
+        f.setSubCategoryId(p.getSubCategoryId());
         f.setSummary(p.getSummary());
         f.setThumbnailMode(p.getThumbnailMode());
         f.setThumbnailUrl(p.getThumbnailUrl());
         f.setStatus(p.getStatus());
         f.setBlocksJson(p.getBlocksJson());
+        f.setLayoutJson(p.getLayoutJson());
         return f;
     }
 }

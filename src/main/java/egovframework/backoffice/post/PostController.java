@@ -43,7 +43,7 @@ public class PostController {
             search.setSize(20);
         }
         model.addAttribute("result", postService.search(search));
-        model.addAttribute("categories", categoryService.findAll());
+        model.addAttribute("categoryTree", categoryService.treeAll());
         model.addAttribute("statuses", PostStatus.values());
         return "post/list";
     }
@@ -113,7 +113,7 @@ public class PostController {
     }
 
     private void addFormOptions(Model model) {
-        model.addAttribute("categories", categoryService.findActive());
+        model.addAttribute("categoryTree", categoryService.tree());
         model.addAttribute("statuses", PostStatus.values());
     }
 }

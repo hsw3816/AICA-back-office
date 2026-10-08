@@ -10,14 +10,21 @@
       <select class="ed-select" id="statusSelect">
         <option value="DRAFT">임시저장 · 공개되지 않음</option>
         <option value="PUBLISHED">공개 · 프론트에 게시</option>
-        <option value="HIDDEN">비공개 · 저장만</option>
+        <option value="HIDDEN">미게시 · 저장만, 프론트 미노출</option>
         <option value="PENDING">답변대기 · FAQ 질문 등</option>
       </select>
 
       <label class="ed-props-label" for="categoryId">카테고리</label>
       <select class="ed-select" th:field="*{categoryId}" id="categoryId">
         <option value="">미분류</option>
-        <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+        <option th:each="c : ${categoryTree}" th:value="${c.id}" th:text="${c.name}"></option>
+      </select>
+      <label class="ed-props-label" for="subCategoryId">세부 카테고리 <span class="ed-help">후기 → 생활·수업·프로젝트·취업·진로 / 기수별 → 3~5기·6기·7기</span></label>
+      <select class="ed-select" th:field="*{subCategoryId}" id="subCategoryId">
+        <option value="">세부 카테고리</option>
+        <th:block th:each="c : ${categoryTree}">
+          <option th:each="s : ${c.children}" th:value="${s.id}" th:text="${s.name}" th:attr="data-parent=${c.id}"></option>
+        </th:block>
       </select>
 
       <label class="ed-props-label">대표 이미지</label>

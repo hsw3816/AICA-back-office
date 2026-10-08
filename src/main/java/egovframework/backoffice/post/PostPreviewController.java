@@ -33,10 +33,20 @@ public class PostPreviewController {
     public String preview(@PathVariable Long id, Model model) {
         Post post = postService.get(id);
         model.addAttribute("post", post);
-        model.addAttribute("blocks", postService.blocksOf(post));
+        addRenderModel(post, model);
         model.addAttribute("previewMode", "saved");
-        model.addAttribute("frontBaseUrl", properties.getFrontBaseUrl());
         return "front/post";
+    }
+
+    /** front/post 가 쓰는 공통 모델: 블록·레이아웃·목차·사이드바 위젯 데이터 */
+    private void addRenderModel(Post post, Model model) {
+        var blocks = postService.blocksOf(post);
+        model.addAttribute("blocks", blocks);
+        model.addAttribute("layout", postService.layoutOf(post));
+        model.addAttribute("toc", postService.tocOf(blocks));
+        model.addAttribute("recentPosts", postService.recentPublished(post.getId(), 5));
+        model.addAttribute("relatedPosts", postService.relatedPublished(post, 4));
+        model.addAttribute("frontBaseUrl", properties.getFrontBaseUrl());
     }
 
     /** 저장 전 미리보기 — 편집 중인 폼 내용을 그대로 렌더링 (새 탭) */
@@ -52,12 +62,16 @@ public class PostPreviewController {
         }
         postService.apply(post, form);
         if (form.getCategoryId() != null) {
-            post.setCategoryName(categoryService.get(form.getCategoryId()).getName());
+            var c = categoryService.get(form.getCategoryId());
+            post.setCategoryName(c.getName());
+            post.setCategorySlug(c.getSlug());
+            if (post.getSubCategoryId() != null) {
+                post.setSubCategoryName(categoryService.get(post.getSubCategoryId()).getName());
+            }
         }
         model.addAttribute("post", post);
-        model.addAttribute("blocks", postService.blocksOf(post));
+        addRenderModel(post, model);
         model.addAttribute("previewMode", "draft");
-        model.addAttribute("frontBaseUrl", properties.getFrontBaseUrl());
         return "front/post";
     }
 }

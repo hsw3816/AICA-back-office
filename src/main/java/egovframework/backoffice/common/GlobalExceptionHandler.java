@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public Object tooLarge(jakarta.servlet.http.HttpServletRequest request, Model model) {
-        String message = "업로드 용량 제한(10MB)을 초과했습니다. 이미지를 줄여서 다시 올려 주세요.";
+        String message = "업로드 용량 제한을 초과했습니다 (이미지 10MB · 문서 20MB · 동영상 200MB). 파일을 줄여서 다시 올려 주세요.";
         // 에디터의 fetch 업로드(/admin/images)에는 JSON 으로 응답
         if (request.getRequestURI().startsWith("/admin/images")) {
             return org.springframework.http.ResponseEntity.status(HttpStatus.BAD_REQUEST)

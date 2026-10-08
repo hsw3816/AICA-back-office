@@ -7,7 +7,7 @@
 (function (BE) {
   'use strict';
   var need = ['Editor', 'cleanInline', 'upload', 'htmlToBlocks'];
-  need.forEach(function (k) { if (!BE[k]) console.error('[BlockEditor] 모듈이 빠졌습니다: ' + k + ' — editor/*.js 로드 순서를 확인하세요 (core → blocks → render → input → dialogs → toolbar → index)'); });
+  need.forEach(function (k) { if (!BE[k]) console.error('[BlockEditor] 모듈이 빠졌습니다: ' + k + ' — editor/*.js 로드 순서를 확인하세요 (core → blocks → render → input → dialogs → toolbar → image-editor → index)'); });
   var p = BE.Editor && BE.Editor.prototype;
   ['renderBlock', 'bindText', 'buildToolbar', 'openLinkDialog'].forEach(function (m) { if (!p || !p[m]) console.error('[BlockEditor] Editor.prototype.' + m + ' 이 없습니다 — editor/*.js 로드 순서를 확인하세요'); });
   BE.mount = function (container, opts) { return new BE.Editor(container, opts); };

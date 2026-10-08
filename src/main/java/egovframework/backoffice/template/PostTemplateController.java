@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 글쓰기 템플릿 JSON API — 편집기(static/js/post/templates.js)가 호출한다. */
+/** 글쓰기 템플릿 JSON API — 글쓰기 화면의 템플릿 패널(static/js/post/templates.js)이 불러오기용으로 호출한다. 관리 화면은 PostTemplatePageController. */
 @RestController
-@RequestMapping("/admin/templates")
+@RequestMapping("/admin/templates/api")
 public class PostTemplateController {
 
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -35,7 +35,7 @@ public class PostTemplateController {
     }
 
     /** 요청 본문: { name, titleHint, categoryId, blocksJson } */
-    public record TemplateRequest(String name, String titleHint, Long categoryId, String blocksJson) { }
+    public record TemplateRequest(String name, String titleHint, Long categoryId, String blocksJson, String layoutJson) { }
 
     @GetMapping
     public List<Map<String, Object>> list() {
@@ -56,17 +56,19 @@ public class PostTemplateController {
         PostTemplate t = service.get(id);
         Map<String, Object> m = summary(t);
         m.put("blocks", service.blocksOf(t));
+        m.put("layoutJson", t.getLayoutJson());
+        m.put("layout", service.layoutOf(t).toMap());
         return m;
     }
 
     @PostMapping
     public Map<String, Object> create(@RequestBody TemplateRequest req, @AuthenticationPrincipal CurrentAdmin me) {
-        return summary(service.create(req.name(), req.titleHint(), req.categoryId(), req.blocksJson(), me.getId()));
+        return summary(service.create(req.name(), req.titleHint(), req.categoryId(), req.blocksJson(), req.layoutJson(), me.getId()));
     }
 
     @PutMapping("/{id}")
     public Map<String, Object> update(@PathVariable Long id, @RequestBody TemplateRequest req) {
-        return summary(service.update(id, req.name(), req.titleHint(), req.categoryId(), req.blocksJson()));
+        return summary(service.update(id, req.name(), req.titleHint(), req.categoryId(), req.blocksJson(), req.layoutJson()));
     }
 
     @DeleteMapping("/{id}")
@@ -75,7 +77,7 @@ public class PostTemplateController {
         return Map.of("ok", true);
     }
 
-    private static Map<String, Object> summary(PostTemplate t) {
+    private Map<String, Object> summary(PostTemplate t) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", t.getId());
         m.put("name", t.getName());
@@ -83,6 +85,7 @@ public class PostTemplateController {
         m.put("categoryId", t.getCategoryId());
         m.put("categoryName", t.getCategoryName());
         m.put("creatorName", t.getCreatorName());
+        m.put("layoutPreset", service.layoutOf(t).getPreset());
         m.put("createdAt", t.getCreatedAt() == null ? null : t.getCreatedAt().format(TIME));
         m.put("updatedAt", t.getUpdatedAt() == null ? null : t.getUpdatedAt().format(TIME));
         return m;

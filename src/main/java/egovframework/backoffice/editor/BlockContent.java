@@ -98,7 +98,8 @@ public class BlockContent {
                 }
                 case "image" -> {
                     String url = str(raw.get("url")).trim();
-                    if (!SAFE_URL.matcher(url).matches()) {
+                    // 주소가 비어 있으면 "사진 자리"(템플릿 뼈대)로 남긴다. 잘못된 주소는 버린다. 프론트는 빈 자리를 그리지 않는다
+                    if (!url.isEmpty() && !SAFE_URL.matcher(url).matches()) {
                         continue;
                     }
                     String width = str(raw.get("width"));
@@ -165,7 +166,7 @@ public class BlockContent {
     /** 대표 이미지 자동 지정용: 본문에서 첫 이미지 URL */
     public String firstImageUrl(List<Map<String, Object>> blocks) {
         for (Map<String, Object> b : blocks) {
-            if ("image".equals(b.get("type"))) {
+            if ("image".equals(b.get("type")) && !str(b.get("url")).isBlank()) {
                 return str(b.get("url"));
             }
         }

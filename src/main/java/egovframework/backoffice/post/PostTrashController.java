@@ -34,14 +34,16 @@ public class PostTrashController {
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirect) {
         trash.moveToTrash(id);
-        redirect.addFlashAttribute("toast", "게시물을 휴지통으로 이동했습니다.");
+        redirect.addFlashAttribute("toast", "게시물을 휴지통으로 이동했습니다. 상태는 '미게시'로 바뀌어 프론트에서 내려갑니다.");
         return "redirect:/admin/posts";
     }
 
     @PostMapping("/{id}/restore")
     public String restore(@PathVariable Long id, RedirectAttributes redirect) {
-        trash.restore(id);
-        redirect.addFlashAttribute("toast", "게시물을 복원했습니다. 글 관리에서 확인할 수 있습니다.");
+        var before = trash.restore(id);
+        boolean wasPublished = before.getStatusBeforeTrash() == egovframework.backoffice.post.PostStatus.PUBLISHED;
+        redirect.addFlashAttribute("toast", "게시물을 '미게시' 상태로 복원했습니다."
+                + (wasPublished ? " 삭제 전에는 게시중이었습니다 — 다시 공개하려면 게시물 관리에서 '게시'를 누르세요." : ""));
         return "redirect:/admin/posts";
     }
 

@@ -3,20 +3,27 @@
 <mapper namespace="egovframework.backoffice.category.CategoryMapper">
 
   <sql id="columnsWithCount">
-    c.id, c.name, c.slug, c.description, c.sort_order, c.active, c.created_at, c.updated_at,
-    (SELECT COUNT(*) FROM posts p WHERE p.category_id = c.id AND p.deleted_at IS NULL) AS post_count
+    c.id, c.name, c.slug, c.description, c.sort_order, c.active, c.created_at, c.updated_at, c.parent_id,
+    (SELECT COUNT(*) FROM posts p WHERE (p.category_id = c.id OR p.sub_category_id = c.id) AND p.deleted_at IS NULL) AS post_count
   </sql>
 
   <select id="findAll" resultType="Category">
     SELECT <include refid="columnsWithCount"/>
       FROM categories c
-     ORDER BY c.sort_order, c.id
+     ORDER BY c.parent_id NULLS FIRST, c.sort_order, c.id
   </select>
 
   <select id="findActive" resultType="Category">
     SELECT <include refid="columnsWithCount"/>
       FROM categories c
      WHERE c.active = TRUE
+     ORDER BY c.sort_order, c.id
+  </select>
+
+  <select id="findActiveChildren" resultType="Category">
+    SELECT <include refid="columnsWithCount"/>
+      FROM categories c
+     WHERE c.active = TRUE AND c.parent_id = #{parentId}
      ORDER BY c.sort_order, c.id
   </select>
 

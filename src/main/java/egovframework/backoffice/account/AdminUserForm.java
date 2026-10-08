@@ -2,7 +2,6 @@ package egovframework.backoffice.account;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,9 +11,9 @@ import lombok.Setter;
 public class AdminUserForm {
     private Long id;
 
-    @NotBlank(message = "로그인 ID를 입력하세요.")
-    @Size(min = 3, max = 50, message = "로그인 ID는 3~50자입니다.")
-    @Pattern(regexp = "^[a-zA-Z0-9._-]+$", message = "로그인 ID는 영문·숫자·._- 만 사용할 수 있습니다.")
+    /** 로그인 ID = 이메일 주소 (형식 검증은 등록 시 서비스에서 — 기존 'admin' 같은 계정은 수정 시 그대로 둔다) */
+    @NotBlank(message = "이메일을 입력하세요.")
+    @Size(max = 120, message = "이메일은 120자 이내입니다.")
     private String loginId;
 
     @NotBlank(message = "이름을 입력하세요.")

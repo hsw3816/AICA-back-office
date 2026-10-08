@@ -3,7 +3,7 @@
 <mapper namespace="egovframework.backoffice.post.version.PostVersionMapper">
 
   <sql id="columns">
-    v.id, v.post_id, v.reason, v.title, v.summary, v.category_id, v.thumbnail_url, v.thumbnail_mode,
+    v.id, v.post_id, v.reason, v.title, v.summary, v.category_id, v.sub_category_id, v.thumbnail_url, v.thumbnail_mode,
     v.status, v.created_by, v.created_at, u.name AS creator_name, c.name AS category_name
   </sql>
 
@@ -14,10 +14,10 @@
   </sql>
 
   <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-    INSERT INTO post_versions (post_id, reason, title, summary, category_id, thumbnail_url, thumbnail_mode,
-                               status, blocks_json, created_by)
-    VALUES (#{postId}, #{reason}, #{title}, #{summary}, #{categoryId}, #{thumbnailUrl}, #{thumbnailMode},
-            #{status}, #{blocksJson}, #{createdBy})
+    INSERT INTO post_versions (post_id, reason, title, summary, category_id, sub_category_id, thumbnail_url, thumbnail_mode,
+                               status, blocks_json, layout_json, created_by)
+    VALUES (#{postId}, #{reason}, #{title}, #{summary}, #{categoryId}, #{subCategoryId}, #{thumbnailUrl}, #{thumbnailMode},
+            #{status}, #{blocksJson}, #{layoutJson}, #{createdBy})
   </insert>
 
   <select id="findByPost" resultType="PostVersion">
@@ -29,7 +29,7 @@
   </select>
 
   <select id="findById" resultType="PostVersion">
-    SELECT <include refid="columns"/>, v.blocks_json
+    SELECT <include refid="columns"/>, v.blocks_json, v.layout_json
     <include refid="joins"/>
     WHERE v.post_id = #{postId} AND v.id = #{id}
   </select>

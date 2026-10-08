@@ -20,12 +20,13 @@
   <input type="hidden" th:field="*{blocksJson}" id="blocksJson">
   <input type="hidden" th:field="*{status}" id="statusField">
   <input type="hidden" th:field="*{thumbnailUrl}" id="thumbnailUrl">
+  <input type="hidden" th:field="*{layoutJson}" id="layoutJson">
 
   <!-- ===== 상단 바: 돌아가기 · 도구 · 저장 ===== -->
   <header class="ed-bar">
     <div class="ed-bar-left">
-      <a class="ed-back" th:href="@{/admin/posts}" title="글 관리로">
-        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> 글 관리
+      <a class="ed-back" th:href="@{/admin/posts}" title="게시물 관리로">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> 게시물 관리
       </a>
       <span class="ed-bar-title" th:text="${form.id == null} ? '새 글 작성' : '글 수정'">새 글 작성</span>
     </div>
@@ -92,18 +93,22 @@
 <div id="editorConfig" hidden
      th:data-upload-url="@{/admin/images}"
      th:data-recent-url="@{/admin/images/recent}"
-     th:data-templates-url="@{/admin/templates}"
+     th:data-categories-url="@{/admin/images/categories}"
+     th:data-templates-url="@{/admin/templates/api}"
+     th:data-templates-page="@{/admin/templates}"
      th:data-versions-url="${form.id != null} ? @{/admin/posts/{id}/versions(id=${form.id})} : ''"
      th:data-post-id="${form.id}"></div>
 
 <script th:src="@{/js/admin.js}"></script>
-<!-- 블록 에디터 라이브러리: 로드 순서 고정 (core → blocks → render → input → dialogs → toolbar → index) -->
+<script th:src="@{/js/category-select.js}"></script>
+<!-- 블록 에디터 라이브러리: 로드 순서 고정 (core → blocks → render → input → dialogs → toolbar → image-editor → index) -->
 <script th:src="@{/js/editor/core.js}"></script>
 <script th:src="@{/js/editor/blocks.js}"></script>
 <script th:src="@{/js/editor/render.js}"></script>
 <script th:src="@{/js/editor/input.js}"></script>
 <script th:src="@{/js/editor/dialogs.js}"></script>
 <script th:src="@{/js/editor/toolbar.js}"></script>
+<script th:src="@{/js/editor/image-editor.js}"></script>
 <script th:src="@{/js/editor/index.js}"></script>
 <!-- 글쓰기 페이지 로직 -->
 <script th:src="@{/js/post/editor-page.js}"></script>

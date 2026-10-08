@@ -22,7 +22,10 @@ public class PostTrashService {
         this.versions = versions;
     }
 
-    /** 휴지통으로 이동. 목록·프론트에서 제외되며 휴지통에서 복원할 수 있다. */
+    /**
+     * 휴지통으로 이동. 이동 직전 상태를 status_before_trash 에 남기고 상태를 미게시(HIDDEN)로 바꾼다 —
+     * 게시중이던 글은 그 즉시 공개가 중단되고, 복원해도 미게시로 돌아와 실수로 다시 공개되는 일을 막는다.
+     */
     public void moveToTrash(Long id) {
         posts.get(id);
         mapper.softDelete(id);
@@ -44,10 +47,11 @@ public class PostTrashService {
         return post;
     }
 
-    /** 복원 → 삭제 전 상태 그대로 글 관리 목록으로 돌아간다. */
-    public void restore(Long id) {
-        getDeleted(id);
+    /** 복원 → 미게시(HIDDEN) 상태로 글 관리 목록으로 돌아간다. 게시하려면 상태를 다시 바꿔야 한다. */
+    public Post restore(Long id) {
+        Post before = getDeleted(id);
         mapper.restore(id);
+        return before;
     }
 
     /** 완전 삭제 — 휴지통에 있는 글만 가능하며 되돌릴 수 없다. 이력·조회 로그를 먼저 지운다(FK). */

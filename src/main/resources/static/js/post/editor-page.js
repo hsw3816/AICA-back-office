@@ -15,12 +15,14 @@
 
   P.init = function (cfg) {
     ['uploadUrl', 'recentUrl', 'templatesUrl'].forEach(function (k) { if (!cfg[k]) console.error('[PostEditorPage] 설정 누락: ' + k); });
-    var uploadUrl = cfg.uploadUrl, recentUrl = cfg.recentUrl;
+    var uploadUrl = cfg.uploadUrl, recentUrl = cfg.recentUrl, categoriesUrl = cfg.categoriesUrl;
     var postId = cfg.postId ? Number(cfg.postId) : null;
     var versionsUrl = cfg.versionsUrl || '';
     var draftKey = 'aica-draft-' + (postId || 'new');
     var form = document.getElementById('postForm');
     var titleEl = form.querySelector('[name="title"]');
+    var layoutEl = document.getElementById('layoutJson');
+    var ctx_catSelect = null;
     var summaryEl = form.querySelector('[name="summary"]');
     var statusEl = form.querySelector('[name="status"]');
     var msg = document.getElementById('autosaveMsg');
@@ -34,7 +36,8 @@
       try {
         localStorage.setItem(draftKey, JSON.stringify({
           at: Date.now(), title: titleEl.value, summary: summaryEl.value,
-          categoryId: form.querySelector('[name="categoryId"]').value, blocks: editor.getBlocks()
+          categoryId: form.querySelector('[name="categoryId"]').value, subCategoryId: form.querySelector('[name="subCategoryId"]').value, blocks: editor.getBlocks(),
+          layout: layoutEl ? layoutEl.value : ''
         }));
         msg.textContent = '브라우저에 백업됨 ' + now() + ' · 서버 저장은 임시저장/완료';
       } catch (e) { /* 저장 공간 부족 등은 무시 */ }
@@ -42,7 +45,7 @@
     }
     var statsEl = document.getElementById('edStats');
     function fingerprint() {
-      return JSON.stringify([titleEl.value, summaryEl.value, form.querySelector('[name="categoryId"]').value, editor.getBlocks()]);
+      return JSON.stringify([titleEl.value, summaryEl.value, form.querySelector('[name="categoryId"]').value, form.querySelector('[name="subCategoryId"]').value, editor.getBlocks(), layoutEl ? layoutEl.value : '']);
     }
     function refreshStats() {
       if (!statsEl) return;
@@ -63,12 +66,14 @@
       toolbar: document.getElementById('toolbar'),
       toolbar2: document.getElementById('toolbar2'),
       tools: document.getElementById('tools'),
-      uploadUrl: uploadUrl, recentUrl: recentUrl,
+      uploadUrl: uploadUrl, recentUrl: recentUrl, categoriesUrl: categoriesUrl,
       onChange: markDirty
     });
     titleEl.addEventListener('input', markDirty);
     summaryEl.addEventListener('input', markDirty);
-    form.querySelector('[name="categoryId"]').addEventListener('change', markDirty);
+    // 카테고리 → 세부 카테고리 연동 (category-select.js)
+    var catSelect = window.CategorySelect ? CategorySelect.bind(form.querySelector('[name="categoryId"]'), form.querySelector('[name="subCategoryId"]'), { onChange: markDirty }) : null;
+    ctx_catSelect = catSelect;
     savedPrint = fingerprint();
     refreshStats();
 
@@ -86,6 +91,8 @@
         document.getElementById('restoreYes').addEventListener('click', function () {
           titleEl.value = saved.title || ''; summaryEl.value = saved.summary || '';
           if (saved.categoryId) form.querySelector('[name="categoryId"]').value = saved.categoryId;
+          if (catSelect) catSelect.rebuild(saved.subCategoryId || '');
+          if (layoutEl && saved.layout !== undefined) { layoutEl.value = saved.layout || ''; layoutEl.dispatchEvent(new Event('layout:external')); }
           editor.setBlocks(saved.blocks); bar.remove(); markDirty();
         });
         document.getElementById('restoreNo').addEventListener('click', function () { localStorage.removeItem(draftKey); bar.remove(); });
@@ -108,7 +115,7 @@
     var BANNER = {
       DRAFT: ['임시저장', '아직 게시되지 않은 콘텐츠입니다. 저장만으로 공개되지 않습니다.'],
       PUBLISHED: ['공개', '저장하면 프론트에 바로 게시됩니다.'],
-      HIDDEN: ['비공개', '서버에 저장되지만 프론트에는 보이지 않습니다.'],
+      HIDDEN: ['미게시', '서버에 저장되지만 프론트에는 보이지 않습니다.'],
       PENDING: ['답변대기', 'FAQ 질문 등 답변 전 상태로 저장됩니다. 프론트에는 보이지 않습니다.']
     };
     function syncStatus() {
@@ -170,7 +177,8 @@
 
 
     var ctx = { form: form, titleEl: titleEl, summaryEl: summaryEl, statusEl: statusEl, editor: editor,
-      markDirty: markDirty, esc: esc, setSubmitting: setSubmitting, postId: postId };
+      markDirty: markDirty, esc: esc, setSubmitting: setSubmitting, postId: postId, layoutEl: layoutEl,
+      setCategory: function (catId, subId) { form.querySelector('[name="categoryId"]').value = catId || ''; if (ctx_catSelect) ctx_catSelect.rebuild(subId || ''); } };
     P.ctx = ctx;
     P.modules.forEach(function (fn) { fn(ctx, cfg); });
   };

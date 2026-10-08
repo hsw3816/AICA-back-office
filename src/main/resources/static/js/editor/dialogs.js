@@ -9,22 +9,76 @@
       FONT_SIZES = BE.FONT_SIZES, COLORS = BE.COLORS, BG_COLORS = BE.BG_COLORS, TEXT_TYPES = BE.TEXT_TYPES, FONTS = BE.FONTS, FONT_OK = BE.FONT_OK;
   var Editor = BE.Editor, anchorOfSelection = BE.anchorOfSelection;
 
+  /**
+   * 이미지 보관함 선택창. 미디어 관리와 같은 카테고리(게시물 카테고리 2단) 탭으로 나눠 보여 주고,
+   * 고른 이미지의 주소를 onPick(url) 로 넘긴다. 분류 목록 주소는 opts.categoriesUrl(없으면 recentUrl 의 recent → categories).
+   */
   Editor.prototype.openPicker = function (onPick) {
     var self = this;
+    var recentUrl = self.opts.recentUrl;
+    var categoriesUrl = self.opts.categoriesUrl || String(recentUrl).replace(/\/recent(\?.*)?$/, '/categories');
+    var tabs = el('div', { 'class': 'be-picker-tabs' });
+    var subtabs = el('div', { 'class': 'be-picker-tabs be-picker-subtabs' });
     var grid = el('div', { 'class': 'grid' }, [el('div', { 'class': 'be-empty', text: '불러오는 중…' })]);
     var overlay = el('div', { 'class': 'be-picker' }, [
       el('div', { 'class': 'box' }, [
-        el('div', { 'class': 'head' }, [el('b', { text: '이미지 보관함 (최근 30개)' }), el('button', { type: 'button', 'class': 'be-btn', text: '닫기', on: { click: function () { overlay.remove(); } } })]),
-        grid
+        el('div', { 'class': 'head' }, [el('b', { text: '이미지 보관함' }), el('button', { type: 'button', 'class': 'be-btn', text: '닫기', on: { click: function () { overlay.remove(); } } })]),
+        tabs, subtabs, grid
       ])
     ]);
     overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
-    fetch(self.opts.recentUrl, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (items) {
-      grid.innerHTML = '';
-      if (!items.length) { grid.appendChild(el('div', { 'class': 'be-empty', text: '업로드된 이미지가 없습니다.' })); return; }
-      items.forEach(function (it) { grid.appendChild(el('img', { src: it.url, title: it.name, on: { click: function () { onPick(it.url); overlay.remove(); } } })); });
-    }).catch(function () { grid.innerHTML = '<div class="be-empty">목록을 불러오지 못했습니다.</div>'; });
+
+    var tree = [];
+    var state = self.pickerState || { cat: 'all', sub: '' };   // 마지막으로 본 분류 기억
+    function tab(container, key, label, count, onClick) {
+      var t = el('button', { type: 'button', 'class': 'be-ptab', text: label, on: { click: onClick } });
+      t.dataset.key = key;
+      if (count !== undefined) t.appendChild(el('b', { text: String(count) }));
+      container.appendChild(t);
+      return t;
+    }
+    function query() {
+      if (state.cat === 'all') return '';
+      if (state.cat === 'unfiled') return '?unfiled=true';
+      return '?categoryId=' + encodeURIComponent(state.cat) + (state.sub ? '&subCategoryId=' + encodeURIComponent(state.sub) : '');
+    }
+    function load() {
+      self.pickerState = { cat: state.cat, sub: state.sub };
+      Array.prototype.forEach.call(tabs.children, function (t) { t.classList.toggle('on', t.dataset.key === state.cat); });
+      // 세부 탭
+      subtabs.innerHTML = '';
+      var cur = tree.filter(function (c) { return String(c.id) === state.cat; })[0];
+      if (cur && cur.children && cur.children.length) {
+        tab(subtabs, '', '전체', cur.count, function () { state.sub = ''; load(); });
+        cur.children.forEach(function (sc) { tab(subtabs, String(sc.id), sc.name, sc.count, function () { state.sub = String(sc.id); load(); }); });
+        Array.prototype.forEach.call(subtabs.children, function (t) { t.classList.toggle('on', t.dataset.key === state.sub); });
+        subtabs.hidden = false;
+      } else { subtabs.hidden = true; }
+      grid.innerHTML = '<div class="be-empty">불러오는 중…</div>';
+      fetch(recentUrl + query(), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (items) {
+        grid.innerHTML = '';
+        if (!items.length) { grid.appendChild(el('div', { 'class': 'be-empty', text: state.cat === 'all' ? '업로드된 이미지가 없습니다. 미디어 관리에서 올려 두세요.' : '이 분류에 이미지가 없습니다.' })); return; }
+        items.forEach(function (it) {
+          var tile = el('figure', { 'class': 'be-pick', title: it.name + (it.categoryPath ? ' · ' + it.categoryPath : '') }, [
+            el('img', { src: it.url, alt: it.name, loading: 'lazy' }),
+            el('figcaption', { text: it.name })
+          ]);
+          tile.addEventListener('click', function () { onPick(it.url); overlay.remove(); });
+          grid.appendChild(tile);
+        });
+      }).catch(function () { grid.innerHTML = '<div class="be-empty">목록을 불러오지 못했습니다.</div>'; });
+    }
+
+    fetch(categoriesUrl, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
+      tree = data.categories || [];
+      tab(tabs, 'all', '전체', data.total, function () { state = { cat: 'all', sub: '' }; load(); });
+      tree.forEach(function (c) { tab(tabs, String(c.id), c.name, c.count, function () { state = { cat: String(c.id), sub: '' }; load(); }); });
+      if (data.unfiled) tab(tabs, 'unfiled', '미분류', data.unfiled, function () { state = { cat: 'unfiled', sub: '' }; load(); });
+      var known = Array.prototype.some.call(tabs.children, function (t) { return t.dataset.key === state.cat; });
+      if (!known) state = { cat: 'all', sub: '' };
+      load();
+    }).catch(function () { tab(tabs, 'all', '전체', undefined, function () { state = { cat: 'all', sub: '' }; load(); }); state = { cat: 'all', sub: '' }; load(); });
   };
 
 
